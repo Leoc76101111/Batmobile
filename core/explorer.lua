@@ -191,8 +191,6 @@ end
 local unstuck = function (local_player)
     local unstuck_node = get_unstuck_node()
     if unstuck_node ~= nil then
-        console.print('unstuck')
-        console.print(vec_to_string(unstuck_node))
         table.insert(explorer.path, 1, unstuck_node)
     else
         explorer.target = node_selector.select_node(local_player, explorer.target)
