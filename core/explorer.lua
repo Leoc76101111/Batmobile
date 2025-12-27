@@ -14,6 +14,7 @@ local explorer = {
     last_trav = nil,
     trav_delay = nil,
     done_delay = nil,
+    movement_step = 1,
 }
 local vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
@@ -115,9 +116,88 @@ local select_target = function (prev_target)
     end
     return node_selector.select_node(prev_target)
 end
+local get_unstuck_node = function ()
+    local unstuck_node = nil
+    local first_node = explorer.path[1]
+    local cur_node = explorer.last_pos
+    local step = explorer.movement_step
+    local test_node, valid, walkable
+    if first_node ~= nil and cur_node ~= nil then
+        if cur_node:x() == first_node:x() then
+            test_node = vec3:new(cur_node:x() + step, cur_node:y(), 0)
+            valid = utility.set_height_of_valid_position(test_node)
+            walkable = utility.is_point_walkeable(valid)
+            if walkable then
+                return valid
+            else
+                test_node = vec3:new(cur_node:x() - step, cur_node:y(), 0)
+                valid = utility.set_height_of_valid_position(test_node)
+                walkable = utility.is_point_walkeable(valid)
+            end
+            if walkable then
+                return valid
+            end
+        elseif cur_node:y() == first_node:y() then
+            test_node = vec3:new(cur_node:x(), cur_node:y() + step, 0)
+            valid = utility.set_height_of_valid_position(test_node)
+            walkable = utility.is_point_walkeable(valid)
+            if walkable then
+                return valid
+            else
+            test_node = vec3:new(cur_node:x(), cur_node:y() - step, 0)
+                valid = utility.set_height_of_valid_position(test_node)
+                walkable = utility.is_point_walkeable(valid)
+            end
+            if walkable then
+                return valid
+            end
+        elseif (cur_node:x() > first_node:x() and cur_node:y() > first_node:y()) or
+            (cur_node:x() < first_node:x() and cur_node:y() < first_node:y())
+        then
+            test_node = vec3:new(cur_node:x() - step, cur_node:y() + step, 0)
+            valid = utility.set_height_of_valid_position(test_node)
+            walkable = utility.is_point_walkeable(valid)
+            if walkable then
+                return valid
+            else
+            test_node = vec3:new(cur_node:x() + step, cur_node:y() - step, 0)
+                valid = utility.set_height_of_valid_position(test_node)
+                walkable = utility.is_point_walkeable(valid)
+            end
+            if walkable then
+                return valid
+            end
+        elseif (cur_node:x() < first_node:x() and cur_node:y() > first_node:y()) or
+            (cur_node:x() > first_node:x() and cur_node:y() < first_node:y())
+        then
+            test_node = vec3:new(cur_node:x() + step, cur_node:y() + step, 0)
+            valid = utility.set_height_of_valid_position(test_node)
+            walkable = utility.is_point_walkeable(valid)
+            if walkable then
+                return valid
+            else
+            test_node = vec3:new(cur_node:x() - step, cur_node:y() - step, 0)
+                valid = utility.set_height_of_valid_position(test_node)
+                walkable = utility.is_point_walkeable(valid)
+            end
+            if walkable then
+                return valid
+            end
+        end
+    end
+
+    return unstuck_node
+end
 local unstuck = function (local_player)
-    explorer.target = node_selector.select_node(local_player, explorer.target)
-    explorer.path = {}
+    local unstuck_node = get_unstuck_node()
+    if unstuck_node ~= nil then
+        console.print('unstuck')
+        console.print(vec_to_string(unstuck_node))
+        table.insert(explorer.path, 1, unstuck_node)
+    else
+        explorer.target = node_selector.select_node(local_player, explorer.target)
+        explorer.path = {}
+    end
     -- explorer.last_update = get_time_since_inject()
 end
 explorer.distance = function (a, b)
@@ -222,13 +302,7 @@ explorer.move = function ()
             explorer.path = {}
         end
     elseif explorer.last_update + 1 < get_time_since_inject() and not is_cced(local_player) then
-        if not explorer.paused then
-            unstuck()
-        else
-            -- explorer paused, probably in combat, extend update
-            explorer.last_update = get_time_since_inject()
-            return
-        end
+        unstuck(local_player)
     end
 
     if explorer.last_pos == nil or distance(cur_node, explorer.last_pos) >= 0.5 then
@@ -263,10 +337,14 @@ explorer.move = function ()
     local moved = false
     local new_path = {}
     for _, node in ipairs(explorer.path) do
-        if distance(node, cur_node) > 0 then
-            if not moved and distance(node, cur_node) >= 1 then
-                console.print(vec_to_string(node))
-                pathfinder.force_move(node)
+        if distance(node, cur_node) >= 1 then
+            if not moved and
+                -- move to nodes that is >= movement step 
+                (distance(node, cur_node) >= explorer.movement_step or
+                -- or if it is close to target
+                distance(node, explorer.target) <= 2)
+            then
+                pathfinder.request_move(node)
                 moved = true
             end
             new_path[#new_path+1] = node

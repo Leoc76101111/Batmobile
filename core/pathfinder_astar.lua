@@ -117,7 +117,7 @@ pathfinder_astar.find_path = function (start, goal)
     local prev_nodes = {}
     pathfinder_astar.counter = 0
     while get_set_count(open_set) > 0 do
-        if pathfinder_astar.counter > 1000 then
+        if pathfinder_astar.counter > 3000 then
             console.print('over counter')
             return {}
         end

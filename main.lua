@@ -22,7 +22,11 @@ local function main_pulse()
     settings:update_settings()
     if not local_player then return end
     if (not settings.enabled or not settings.get_keybind_state()) then return end
-    explorer.update()
+    -- explorer.update()
+    -- local goal = vec3:new(-516.9560546875,-298.0712890625,32.373046875)
+    -- BatmobilePlugin.pause(plugin_label)
+    -- BatmobilePlugin.set_target(plugin_label, goal)
+    -- BatmobilePlugin.move(plugin_label)
     -- explorer.move()
 end
 
