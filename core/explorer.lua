@@ -198,7 +198,7 @@ local unstuck = function (local_player)
         explorer.target = node_selector.select_node(local_player, explorer.target)
         explorer.path = {}
     end
-    -- explorer.last_update = get_time_since_inject()
+    explorer.last_update = get_time_since_inject()
 end
 explorer.distance = function (a, b)
     if a.get_position then
