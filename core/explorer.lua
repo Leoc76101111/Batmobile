@@ -117,6 +117,8 @@ local select_target = function (prev_target)
     return node_selector.select_node(prev_target)
 end
 local get_unstuck_node = function ()
+    -- get a node that is perpendicular to the first node in path from current node
+    -- i.e. turn 90 degress left or right 
     local unstuck_node = nil
     local first_node = explorer.path[1]
     local cur_node = explorer.last_pos
@@ -319,7 +321,7 @@ explorer.move = function ()
         explorer.done_delay = nil
     end
 
-    if #explorer.path == 0 or distance(explorer.path[1],explorer.last_pos) > 2 then
+    if #explorer.path == 0 or distance(explorer.path[1],explorer.last_pos) >= 2 then
         local result = path_finder.find_path(explorer.last_pos, explorer.target)
         if #result == 0 then
             console.print('no path to target')
