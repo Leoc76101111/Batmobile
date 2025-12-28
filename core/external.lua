@@ -20,7 +20,9 @@ external.reset = function (caller)
 end
 external.move = function (caller)
     tracker.external_caller = caller
+    local start_move = os.clock()
     explorer.move()
+    tracker.timer_update = os.clock() - start_move
 end
 external.update = function (caller)
     tracker.external_caller = caller
