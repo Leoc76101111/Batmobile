@@ -8,40 +8,49 @@ local external = {
 }
 external.pause = function (caller)
     tracker.external_caller = caller
+    console.print('pause called by ' .. caller)
     explorer.pause()
 end
 external.resume = function (caller)
     tracker.external_caller = caller
+    console.print('resume called by ' .. caller)
     explorer.unpause()
 end
 external.reset = function (caller)
     tracker.external_caller = caller
+    console.print('reset called by ' .. caller)
     explorer.reset()
 end
 external.move = function (caller)
     tracker.external_caller = caller
+    console.print('move called by ' .. caller)
     local start_move = os.clock()
     explorer.move()
     tracker.timer_update = os.clock() - start_move
 end
 external.update = function (caller)
     tracker.external_caller = caller
+    console.print('update called by ' .. caller)
     explorer.update()
 end
 external.set_target = function(caller, target)
     tracker.external_caller = caller
+    console.print('set_target called by ' .. caller)
     explorer.set_target(target)
 end
 external.set_goal = function(caller, target)
     tracker.external_caller = caller
+    console.print('set_goal called by ' .. caller)
     explorer.set_goal(target)
 end
 external.clear_target = function (caller)
     tracker.external_caller = caller
+    console.print('clear_target called by ' .. caller)
     explorer.clear_target()
 end
 external.clear_goal = function (caller)
     tracker.external_caller = caller
+    console.print('clear_goal called by ' .. caller)
     explorer.clear_goal()
 end
 external.distance = function (caller, a, b)
