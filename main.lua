@@ -2,6 +2,7 @@ local plugin_label = 'batmobile_explorer'
 
 local gui          = require 'gui'
 local settings     = require 'core.settings'
+local utils      = require 'core.utils'
 local external      = require 'core.external'
 local explorer     = require 'core.explorer'
 local drawing      = require 'core.drawing'
@@ -39,9 +40,12 @@ local function main_pulse()
         -- else
         --     BatmobilePlugin.set_target(plugin_label, goal2)
         -- end
-        local start_move = os.clock()
-        explorer.move()
-        tracker.timer_update = os.clock() - start_move
+        if not tracker.paused and not utils.player_loading() then
+            local start_move = os.clock()
+            explorer.move()
+            tracker.timer_update = os.clock() - start_move
+        end
+        -- collectgarbage("collect")
     end
 end
 

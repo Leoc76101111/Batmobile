@@ -21,4 +21,14 @@ end
 function utils.player_in_zone(zname)
     return get_current_world():get_current_zone_name() == zname
 end
+function utils.player_loading(zname)
+    return utils.player_in_zone('[sno none]')
+end
+function utils.player_in_town()
+    if get_local_player():get_attribute(attributes.PLAYER_IN_TOWN_LEVEL_AREA) == 1 then
+        return true
+    else
+        return false
+    end
+end
 return utils

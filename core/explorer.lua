@@ -1,5 +1,6 @@
 local node_selector = require 'core.node_selector_dfs'
 local path_finder = require 'core.pathfinder_astar'
+local utils = require 'core.utils'
 local tracker = require 'core.tracker'
 
 local explorer = {
@@ -111,7 +112,8 @@ select_target = function (prev_target)
             local trav_str = trav_name .. vec_to_string(trav_pos)
             local cur_dist = distance_z(player_pos, trav_pos)
             if explorer.blacklisted_trav[trav_str] == nil and
-                (closest_trav == nil or cur_dist < closest_dist)
+                (closest_trav == nil or cur_dist < closest_dist) and
+                distance(player_pos, trav_pos) <= 15
             then
                 closest_dist = cur_dist
                 closest_trav = trav
@@ -129,7 +131,7 @@ select_target = function (prev_target)
         then
             local closest_node = get_closeby_node(closest_trav:get_position(), 1)
             if closest_node == nil then
-                explorer.blacklisted_trav[closest_str] = closest_trav
+                explorer.blacklisted_trav[closest_str] = closest_str
                 return select_target(prev_target)
             end
             explorer.last_trav = closest_trav
@@ -260,7 +262,7 @@ local get_unstuck_node = function ()
     -- end
 
     if cur_node ~= nil then
-        console.print('pattern all')
+        -- console.print('pattern all')
         local x = cur_node:x()
         local y = cur_node:y()
 
@@ -327,16 +329,22 @@ explorer.is_done = function ()
 end
 explorer.pause = function ()
     explorer.paused = true
+    tracker.paused = true
 end
 explorer.unpause = function ()
     explorer.paused = false
+    tracker.paused = false
 end
 explorer.update = function ()
+    if utils.player_loading() then
+        -- extend last_update so that it doesnt trigger unstuck straight after loading
+        explorer.last_update = get_time_since_inject() + 5
+        explorer.unstuck_nodes = {}
+    end
     local local_player = get_local_player()
     if not local_player then return end
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 and has_traversal_buff(local_player) then return end
-
     node_selector.update(local_player)
 end
 explorer.reset = function ()
@@ -348,6 +356,8 @@ explorer.reset = function ()
     explorer.trav_delay = nil
     explorer.last_pos = nil
     explorer.done_delay = nil
+    explorer.unstuck_nodes = {}
+    explorer.blacklisted_trav = {}
 end
 explorer.set_target = function (target)
     if target.get_position then
@@ -396,10 +406,10 @@ explorer.move = function ()
     local cur_node = normalize_node(player_pos)
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 then
-        if explorer.last_trav ~= nil and
+        local trav = explorer.last_trav
+        if trav ~= nil and distance(player_pos, trav:get_position()) <= 3 and
             (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
         then
-            local trav = explorer.last_trav
             interact_object(trav)
             local name = trav:get_skin_name()
             if name:match('Jump') then
@@ -413,7 +423,7 @@ explorer.move = function ()
             explorer.target = nil
             explorer.last_trav = nil
         end
-    else
+    elseif not explorer.paused then
         -- cast_spell.self(514030, 0)
         -- cast_spell.self(517417, 0)
         -- cast_spell.position(288106, player_pos, 0)
@@ -447,8 +457,10 @@ explorer.move = function ()
         has_traversal_buff(local_player)
     then
         explorer.last_pos = cur_node
-        explorer.last_update = get_time_since_inject()
-        explorer.unstuck_nodes = {}
+        if explorer.last_update == nil or explorer.last_update < get_time_since_inject() then
+            explorer.last_update = get_time_since_inject()
+            explorer.unstuck_nodes = {}
+        end
     end
 
     if explorer.target == nil then

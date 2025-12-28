@@ -10,6 +10,7 @@ local tracker = {
     debug_pos = nil,
     debug_node = nil,
     debug_actor = nil,
+    paused = false
 }
 
 return tracker
