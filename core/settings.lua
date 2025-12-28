@@ -3,12 +3,7 @@ local gui = require 'gui'
 local settings = {
     plugin_label = gui.plugin_label,
     plugin_version = gui.plugin_version,
-    enabled = false,
-    path_angle = 10,
-    use_evade = false,
-    aggresive_movement = false,
-    open_chest = false,
-    priority = 'Belial'
+    enabled = true,
 }
 
 function settings.get_keybind_state()
@@ -29,8 +24,6 @@ end
 
 function settings:update_settings()
     settings.enabled = gui.elements.main_toggle:get()
-    settings.open_chest = gui.elements.chest_toggle:get()
-    settings.priority = gui.priority_options[gui.elements.priority:get()+1]
 end
 
 return settings

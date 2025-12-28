@@ -10,6 +10,13 @@ end
 local vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
 end
+local get_set_count = function (set)
+    local counter = 0
+    for _, item in pairs(set) do
+        counter = counter + 1
+    end
+    return counter
+end
 local drawing = {}
 
 drawing.draw_nodes = function ()
@@ -51,21 +58,21 @@ drawing.draw_nodes = function ()
     local prev_node = nil
     local counter = 0
 
-    -- for index = #backtrack, 1, -1 do
-    --     if counter < 50 then
-    --         local node = backtrack[index]
-    --         local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-    --         -- valid = utility.set_height_of_valid_position(node)
-    --         graphics.circle_3d(valid, 0.05, color_yellow(255))
-    --         if prev_node ~= nil then
-    --             graphics.line(valid, prev_node, color_yellow(255), 1)
-    --         else
-    --             graphics.line(valid_cur_pos, valid, color_yellow(255), 1)
-    --         end
-    --         prev_node = valid
-    --         counter = counter + 1
-    --     end
-    -- end
+    for index = #backtrack, 1, -1 do
+        if counter < 50 then
+            local node = backtrack[index]
+            local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
+            -- valid = utility.set_height_of_valid_position(node)
+            graphics.circle_3d(valid, 0.05, color_yellow(255))
+            if prev_node ~= nil then
+                graphics.line(valid, prev_node, color_yellow(255), 1)
+            else
+                graphics.line(valid_cur_pos, valid, color_yellow(255), 1)
+            end
+            prev_node = valid
+            counter = counter + 1
+        end
+    end
     prev_node = nil
     for index, node in pairs(path) do
         local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
@@ -80,7 +87,21 @@ drawing.draw_nodes = function ()
             prev_node = valid
         end
     end
-    -- local valid = vec3:new(-501, -300.5, valid_cur_pos:z())
+    local visited_count = get_set_count(visited)
+    local messages = {
+        'visited   ' .. tostring(visited_count),
+        'frontier  ' .. tostring(get_set_count(frontier)),
+        'backtrack ' .. tostring(#backtrack)
+    }
+    local x_offset = 125 + (#tostring(visited_count) * 11)
+    local x_pos = get_screen_width() - x_offset
+    local y_pos = get_screen_height() - 80
+    for _, msg in ipairs(messages) do
+        graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
+        y_pos = y_pos + 20
+    end
+
+    -- local valid = vec3:new(-737.5, -683.5, valid_cur_pos:z())
     -- graphics.circle_3d(valid, 0.05, color_blue(255))
 end
 

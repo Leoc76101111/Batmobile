@@ -9,15 +9,10 @@ end
 
 gui.plugin_label = plugin_label
 gui.plugin_version = plugin_version
-gui.priority_options = {
-    'Andariel',
-    'Belial',
-    'Duriel'
-}
 
 gui.elements = {
     main_tree = tree_node:new(0),
-    main_toggle = create_checkbox(false, 'main_toggle'),
+    main_toggle = create_checkbox(true, '_main_toggle'),
     use_keybind = create_checkbox(false, 'use_keybind'),
     keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_keybind_toggle' )),
     chest_toggle = create_checkbox(false, 'main_toggle'),

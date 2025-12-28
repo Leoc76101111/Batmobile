@@ -8,10 +8,10 @@ local node_selector_dfs = {
     backtrack = {},
     last_dir = nil,
     radius = 10,
-    frontier_radius = 15,
+    frontier_radius = 11,
     step = 0.5,
     normalizer = 2, -- *10/5 to get steps of 0.5
-    backtracking = false
+    backtracking = false,
 }
 local normalize_value = function (val)
     local normalizer = node_selector_dfs.normalizer
@@ -95,54 +95,64 @@ node_selector_dfs.set_current_pos = function (local_player)
     node_selector_dfs.cur_pos = normalize_node(local_player:get_position())
     if not node_selector_dfs.backtracking then
         if #node_selector_dfs.backtrack > 0 then
-            -- simulating pop()
             local last_index = #node_selector_dfs.backtrack
             local last_pos = node_selector_dfs.backtrack[last_index]
-            node_selector_dfs.backtrack[last_index] = nil
 
             local dist = distance(last_pos, node_selector_dfs.cur_pos)
-            if dist ~= 0 then
-                node_selector_dfs.backtrack[last_index] = last_pos
-                if dist >= 2 then
-                    node_selector_dfs.backtrack[last_index+1] = node_selector_dfs.cur_pos
-                end
+            if dist >= 4 then
+                node_selector_dfs.backtrack[last_index+1] = node_selector_dfs.cur_pos
             end
         else
             node_selector_dfs.backtrack[1] = node_selector_dfs.cur_pos
         end
     end
 end
-node_selector_dfs.update_frontier = function (local_player)
-    if node_selector_dfs.cur_pos == nil then
-        node_selector_dfs.set_current_pos(local_player)
-    end
+node_selector_dfs.update = function (local_player)
+    node_selector_dfs.set_current_pos(local_player)
     local cur_pos = node_selector_dfs.cur_pos
-    local cur_str = vec_to_string(cur_pos)
-    if node_selector_dfs.frontier[cur_str] ~= nil then
-        remove_frontier(cur_str)
-    end
+    local prev_pos = node_selector_dfs.prev_pos
+    if prev_pos ~= nil and distance(cur_pos,prev_pos) == 0 then return end
 
-    local radius = node_selector_dfs.frontier_radius
+    local x = cur_pos:x()
+    local y = cur_pos:y()
+
+    local f_radius = node_selector_dfs.frontier_radius
+    local v_radius = node_selector_dfs.radius
     local step = node_selector_dfs.step
-    local min_x = cur_pos:x() - radius + step
-    local max_x = cur_pos:x() + radius
-    local min_y = cur_pos:y() - radius + step
-    local max_y = cur_pos:y() + radius
-    for i = min_x, max_x - step, step do
-        for j = min_y, max_y - step, step do
+
+    local f_min_x = x - f_radius + step
+    local f_max_x = x + f_radius - step
+    local f_min_y = y - f_radius + step
+    local f_max_y = y + f_radius - step
+
+    local v_min_x = x - v_radius + step
+    local v_max_x = x + v_radius - step
+    local v_min_y = y - v_radius + step
+    local v_max_y = y + v_radius - step
+
+    for i = f_min_x, f_max_x, step do
+        for j = f_min_y, f_max_y, step do
             local norm_x = normalize_value(i)
             local norm_y = normalize_value(j)
             local node =  vec3:new(norm_x, norm_y, 0)
             local node_str = vec_to_string(node)
-            if node_selector_dfs.visited[node_str] == nil and
-                node_selector_dfs.frontier[node_str] == nil
-            then
-                local valid = utility.set_height_of_valid_position(node)
-                local walkable = utility.is_point_walkeable(valid)
-                if walkable then
-                    node_selector_dfs.frontier[node_str] = node
-                    local index = #node_selector_dfs.frontier_order
-                    node_selector_dfs.frontier_order[index+1] = node_str
+
+            if node_selector_dfs.visited[node_str] == nil then
+                if i >= v_min_x and i <= v_max_x and j >= v_min_y and j <= v_max_y then
+                    node_selector_dfs.visited[node_str] = node
+                    if node_selector_dfs.frontier[node_str] ~= nil and
+                        node_selector_dfs.frontier[node_str] ~= nil
+                    then
+                        remove_frontier(node_str)
+                    end
+                elseif node_selector_dfs.frontier[node_str] == nil then
+                    local valid = utility.set_height_of_valid_position(node)
+                    local walkable = utility.is_point_walkeable(valid)
+                    if walkable then
+                        node_selector_dfs.frontier[node_str] = node
+                        local index = #node_selector_dfs.frontier_order
+                        node_selector_dfs.frontier_order[index+1] = node_str
+                    end
                 end
             end
         end
@@ -153,6 +163,8 @@ node_selector_dfs.select_node = function (local_player, failed)
         node_selector_dfs.set_current_pos(local_player)
     end
     if failed ~= nil then
+        -- if failed at backtrack, try again
+        if node_selector_dfs.backtracking then return failed end
         failed = normalize_node(failed)
         local failed_str = vec_to_string(failed)
         node_selector_dfs.visited[failed_str] = failed
@@ -238,33 +250,6 @@ node_selector_dfs.select_node = function (local_player, failed)
     end
     -- no perimeter, no frontier all explored
     return nil
-end
-node_selector_dfs.mark_visited = function (node)
-    local cur_pos = node_selector_dfs.cur_pos
-    local radius = node_selector_dfs.radius
-    local step = node_selector_dfs.step
-    local min_x = cur_pos:x() - radius + step
-    local max_x = cur_pos:x() + radius
-    local min_y = cur_pos:y() - radius + step
-    local max_y = cur_pos:y() + radius
-    for i = min_x, max_x - step, step do
-        for j = min_y, max_y - step, step do
-            local norm_x = normalize_value(i)
-            local norm_y = normalize_value(j)
-            local new_node =  vec3:new(norm_x, norm_y, 0)
-            local new_node_str = vec_to_string(new_node)
-            if node_selector_dfs.visited[new_node_str] == nil then
-                local valid = utility.set_height_of_valid_position(new_node)
-                local walkable = utility.is_point_walkeable(valid)
-                if walkable then
-                    node_selector_dfs.visited[new_node_str] = new_node
-                    if node_selector_dfs.frontier[new_node_str] ~= nil then
-                        remove_frontier(new_node_str)
-                    end
-                end
-            end
-        end
-    end
 end
 
 return node_selector_dfs

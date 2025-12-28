@@ -34,6 +34,14 @@ external.set_goal = function(caller, target)
     tracker.external_caller = caller
     explorer.set_goal(target)
 end
+external.clear_target = function (caller)
+    tracker.external_caller = caller
+    explorer.clear_target()
+end
+external.clear_goal = function (caller)
+    tracker.external_caller = caller
+    explorer.clear_goal()
+end
 external.distance = function (caller, a, b)
     tracker.external_caller = caller
     return explorer.distance(a, b)
