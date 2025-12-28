@@ -49,14 +49,16 @@ local get_perimeter = function (node)
     local cur_pos = node_selector_dfs.cur_pos
     local radius = node_selector_dfs.radius
     local step = node_selector_dfs.step
-    local min_x = cur_pos:x() - radius
-    local max_x = cur_pos:x() + radius + step
-    local min_y = cur_pos:y() - radius
-    local max_y = cur_pos:y() + radius + step
-    for i = min_x, max_x - step, step do
-        for j = min_y, max_y - step, step do
+    local x = cur_pos:x()
+    local y = cur_pos:y()
+    local min_x = x - radius
+    local max_x = x + radius
+    local min_y = y - radius
+    local max_y = y + radius
+    for i = min_x, max_x, step do
+        for j = min_y, max_y, step do
             if not (i == node:x() and j == node:y()) and
-                not (i ~= min_x and i ~= max_x - step and j ~= min_y and j ~= max_y - step)
+                not (i ~= min_x and i ~= max_x and j ~= min_y and j ~= max_y)
             then
                 local norm_x = normalize_value(i)
                 local norm_y = normalize_value(j)
@@ -120,10 +122,10 @@ node_selector_dfs.update = function (local_player)
     local v_radius = node_selector_dfs.radius
     local step = node_selector_dfs.step
 
-    local f_min_x = x - f_radius + step
-    local f_max_x = x + f_radius - step
-    local f_min_y = y - f_radius + step
-    local f_max_y = y + f_radius - step
+    local f_min_x = x - f_radius
+    local f_max_x = x + f_radius
+    local f_min_y = y - f_radius
+    local f_max_y = y + f_radius
 
     local v_min_x = x - v_radius + step
     local v_max_x = x + v_radius - step
