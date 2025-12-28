@@ -84,7 +84,7 @@ local get_closeby_node = function (trav_node, max_dist)
         end
     end
     table.sort(nodes, function(a, b)
-        return distance(a, cur_node) < distance(b, cur_node)
+        return distance(a, norm_trav) < distance(b, norm_trav)
     end)
     for _, node in ipairs(nodes) do
         local result = path_finder.find_path(cur_node, node)
