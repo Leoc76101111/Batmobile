@@ -4,6 +4,12 @@ local plugin_label = 'batmobile_explorer'
 local tracker = {
     name        = plugin_label,
     external_caller = nil,
+    timer_update = 0,
+    timer_move = 0,
+    timer_draw = 0,
+    debug_pos = nil,
+    debug_node = nil,
+    debug_actor = nil,
 }
 
 return tracker

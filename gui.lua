@@ -15,6 +15,7 @@ gui.elements = {
     main_toggle = create_checkbox(true, '_main_toggle'),
     use_keybind = create_checkbox(false, 'use_keybind'),
     keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_keybind_toggle' )),
+    draw_keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_draw_keybind_toggle' )),
     chest_toggle = create_checkbox(false, 'main_toggle'),
     priority = combo_box:new(1, get_hash(plugin_label .. '_priority')),
     drop_sigil_keybind = keybind:new(0x0A, true, get_hash(plugin_label .. '_drop_sigil_keybind' )),
@@ -25,6 +26,7 @@ function gui.render()
     gui.elements.use_keybind:render('Use keybind', 'Keybind to quick toggle the bot')
     if gui.elements.use_keybind:get() then
         gui.elements.keybind_toggle:render('Toggle Keybind', 'Toggle the bot for quick enable')
+        gui.elements.draw_keybind_toggle:render('Toggle Drawing', 'Toggle drawing')
     end
     gui.elements.main_tree:pop()
 end

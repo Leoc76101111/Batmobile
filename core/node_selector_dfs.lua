@@ -12,6 +12,8 @@ local node_selector_dfs = {
     step = 0.5,
     normalizer = 2, -- *10/5 to get steps of 0.5
     backtracking = false,
+    backtrack_node = nil,
+    backtrack_failed_time = -1
 }
 local normalize_value = function (val)
     local normalizer = node_selector_dfs.normalizer
@@ -47,6 +49,7 @@ local get_perimeter = function (node)
     local perimeter = {}
 
     local cur_pos = node_selector_dfs.cur_pos
+    local valid_cur_pos = utility.set_height_of_valid_position(cur_pos)
     local radius = node_selector_dfs.radius
     local step = node_selector_dfs.step
     local x = cur_pos:x()
@@ -67,7 +70,8 @@ local get_perimeter = function (node)
                 if node_selector_dfs.visited[new_node_str] == nil then
                     local valid = utility.set_height_of_valid_position(new_node)
                     local walkable = utility.is_point_walkeable(valid)
-                    if walkable then
+                    local diff_z = math.abs(valid_cur_pos:z() - valid:z())
+                    if walkable and diff_z <= 3 then
                         perimeter[#perimeter+1] = new_node
                     end
                 end
@@ -111,6 +115,7 @@ node_selector_dfs.set_current_pos = function (local_player)
 end
 node_selector_dfs.update = function (local_player)
     node_selector_dfs.set_current_pos(local_player)
+    local player_pos = local_player:get_position()
     local cur_pos = node_selector_dfs.cur_pos
     local prev_pos = node_selector_dfs.prev_pos
     if prev_pos ~= nil and distance(cur_pos,prev_pos) == 0 then return end
@@ -150,7 +155,8 @@ node_selector_dfs.update = function (local_player)
                 elseif node_selector_dfs.frontier[node_str] == nil then
                     local valid = utility.set_height_of_valid_position(node)
                     local walkable = utility.is_point_walkeable(valid)
-                    if walkable then
+                    local diff_z = math.abs(player_pos:z() - valid:z())
+                    if walkable and diff_z <= 3 then
                         node_selector_dfs.frontier[node_str] = node
                         local index = #node_selector_dfs.frontier_order
                         node_selector_dfs.frontier_order[index+1] = node_str
@@ -166,7 +172,15 @@ node_selector_dfs.select_node = function (local_player, failed)
     end
     if failed ~= nil then
         -- if failed at backtrack, try again
-        if node_selector_dfs.backtracking then return failed end
+        if node_selector_dfs.backtracking then
+            if node_selector_dfs.backtrack_node ~= vec_to_string(failed) then
+                node_selector_dfs.backtrack_failed_time = get_time_since_inject()
+                node_selector_dfs.backtrack_node = vec_to_string(failed)
+                return failed
+            elseif node_selector_dfs.backtrack_failed_time + 5 < get_time_since_inject() then
+                return failed
+            end
+        end
         failed = normalize_node(failed)
         local failed_str = vec_to_string(failed)
         node_selector_dfs.visited[failed_str] = failed

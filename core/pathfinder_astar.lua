@@ -106,7 +106,7 @@ pathfinder_astar.get_counter = function ()
     return pathfinder_astar.counter
 end
 pathfinder_astar.find_path = function (start, goal)
-    console.print('start pathfinding')
+    -- console.print('start pathfinding')
     local start_node = normalize_node(start)
     local goal_node = normalize_node(goal)
     local start_str = vec_to_string(start_node)
@@ -117,14 +117,14 @@ pathfinder_astar.find_path = function (start, goal)
     local prev_nodes = {}
     pathfinder_astar.counter = 0
     while get_set_count(open_set) > 0 do
-        if pathfinder_astar.counter > 3000 then
-            console.print('over counter')
+        if pathfinder_astar.counter > 1500 then
+            -- console.print('over counter')
             return {}
         end
         pathfinder_astar.counter = pathfinder_astar.counter + 1
         local cur_str, cur_node = get_lowest_f_score(open_set, f_score)
         if is_equal(cur_node, goal_node) then
-            console.print('path found')
+            -- console.print('path found')
             return reconstruct_path(prev_nodes, cur_node)
         end
         open_set[cur_str] = nil
@@ -145,7 +145,7 @@ pathfinder_astar.find_path = function (start, goal)
             end
         end
     end
-    console.print('no openset')
+    -- console.print('no openset')
     return {}
 end
 

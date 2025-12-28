@@ -1,5 +1,6 @@
 local node_selector = require 'core.node_selector_dfs'
 local path_finder = require 'core.pathfinder_astar'
+local tracker = require 'core.tracker'
 
 local explorer = {
     last_pos = nil,
@@ -15,7 +16,11 @@ local explorer = {
     trav_delay = nil,
     done_delay = nil,
     movement_step = 4,
-    is_custom_target = false
+    is_custom_target = false,
+    unstuck_nodes = {},
+    last_stuck_target = nil,
+    last_stuck_time = -1,
+    blacklisted_trav = {},
 }
 local vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
@@ -35,22 +40,14 @@ local distance = function (a, b)
     return math.max(dx, dy) + (math.sqrt(2) - 1) * math.min(dx, dy)
 end
 local distance_z = function (a, b)
-    local dx = math.abs(a:x() - b:x())
-    local dy = math.abs(a:y() - b:y())
-    local dz = math.abs(a:z() - b:z())
-
-    -- Sort differences: d1 >= d2 >= d3
-    local diffs = {dx, dy, dz}
-    table.sort(diffs, function(x, y) return x > y end)
-
-    return diffs[1] + (math.sqrt(2) - 1) * diffs[2] + (math.sqrt(3) - math.sqrt(2)) * diffs[3]
+    return math.abs(a:z() - b:z())
 end
 local get_nearby_travs = function (local_player)
     local traversals = {}
     local actors = actors_manager:get_all_actors()
     for _, actor in pairs(actors) do
         local name = actor:get_skin_name()
-        if name:match('[Tt]raversal') then
+        if name:match('[Tt]raversal_Gizmo') then
             traversals[#traversals+1] = actor
         end
     end
@@ -75,28 +72,29 @@ local get_closeby_node = function (trav_node, max_dist)
     local norm_trav = normalize_node(trav_node)
     local step = explorer.step
 
-    local closest_node = nil
-    local closest_dist = nil
-
+    local nodes = {}
     for i = norm_trav:x()-max_dist, norm_trav:x()+max_dist, step do
         for j = norm_trav:y()-max_dist, norm_trav:y()+max_dist, step do
             local new_node =  vec3:new(i, j, 0)
             local valid = utility.set_height_of_valid_position(new_node)
             local walkable = utility.is_point_walkeable(valid)
-            local diff_z = math.abs(trav_node:z() - valid:z())
+            local diff_z = distance_z(trav_node, valid)
             if walkable and diff_z < 1 then
-                local result = path_finder.find_path(cur_node, new_node)
-                local dist = distance(norm_trav,new_node)
-                if #result > 0 and (closest_dist == nil or dist < closest_dist) then
-                    closest_node = new_node
-                    closest_dist = dist
-                end
+                nodes[#nodes+1] = new_node
             end
         end
     end
-    return closest_node
+    table.sort(nodes, function(a, b)
+        return distance(a, cur_node) < distance(b, cur_node)
+    end)
+    for _, node in ipairs(nodes) do
+        local result = path_finder.find_path(cur_node, node)
+        if #result > 0 then return node end
+    end
+    return nil
 end
-local select_target = function (prev_target)
+local select_target
+select_target = function (prev_target)
     local local_player = get_local_player()
     if not local_player then return nil end
     explorer.is_custom_target = false
@@ -106,124 +104,166 @@ local select_target = function (prev_target)
         local closest_trav = nil
         local closest_dist = nil
         local closest_pos = nil
+        local closest_str = nil
         for _, trav in ipairs(traversals) do
             local trav_pos = trav:get_position()
+            local trav_name = trav:get_skin_name()
+            local trav_str = trav_name .. vec_to_string(trav_pos)
             local cur_dist = distance_z(player_pos, trav_pos)
-            if closest_trav == nil or cur_dist < closest_dist then
+            if explorer.blacklisted_trav[trav_str] == nil and
+                (closest_trav == nil or cur_dist < closest_dist)
+            then
                 closest_dist = cur_dist
                 closest_trav = trav
                 closest_pos = trav_pos
+                closest_str = trav_str
             end
         end
+        -- local diff_z = distance_z(closest_pos, player_pos)
         if closest_trav ~= nil and
             closest_dist <= 15 and
             explorer.last_trav == nil and
             closest_pos ~= nil and
-            math.abs(closest_pos:z() - player_pos:z()) <= 3
+            math.abs(closest_pos:z() - player_pos:z()) <= 3 and
+            (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
         then
+            local closest_node = get_closeby_node(closest_trav:get_position(), 1)
+            if closest_node == nil then
+                explorer.blacklisted_trav[closest_str] = closest_trav
+                return select_target(prev_target)
+            end
             explorer.last_trav = closest_trav
-            return get_closeby_node(closest_trav:get_position(), 2)
+            return closest_node
         end
     else
         explorer.last_trav = nil
+        explorer.blacklisted_trav = {}
     end
     return node_selector.select_node(prev_target)
+end
+local function shuffle_table(tbl)
+    local len = #tbl
+    for i = len, 2, -1 do
+        -- Generate a random index 'j' between 1 and 'i' (inclusive)
+        local j = math.random(i)
+        -- Swap the elements at positions 'i' and 'j'
+        tbl[i], tbl[j] = tbl[j], tbl[i]
+    end
+    return tbl
 end
 local get_unstuck_node = function ()
     -- get a node that is perpendicular to the first node in path from current node
     -- i.e. turn 90 degress left or right 
     local unstuck_node = nil
-    local path_node = nil
     local cur_node = explorer.last_pos
     local step = explorer.movement_step
-    local test_node, valid, walkable
+    local test_node, test_node_str, valid, walkable
 
-    for _, node in ipairs(explorer.path) do
-        if distance(node, cur_node) >= 1 then
-            if path_node == nil and
-                -- move to nodes that is >= movement step 
-                (distance(node, cur_node) >= explorer.movement_step or
-                -- or if it is close to target
-                distance(node, explorer.target) == 0)
-            then
-                path_node = node
-            end
-        end
-    end
+    
+    -- -- to be worked on later
+    -- local path_node = nil
+    -- for _, node in ipairs(explorer.path) do
+    --     if distance(node, cur_node) >= 1 then
+    --         if path_node == nil and
+    --             -- move to nodes that is >= movement step 
+    --             (distance(node, cur_node) >= explorer.movement_step or
+    --             -- or if it is close to target
+    --             distance(node, explorer.target) == 0)
+    --         then
+    --             path_node = node
+    --         end
+    --     end
+    -- end
 
-    if path_node ~= nil and cur_node ~= nil then
-        if cur_node:x() == path_node:x() then
-            console.print('pattern 1')
-            test_node = vec3:new(cur_node:x() + step, cur_node:y(), 0)
-            valid = utility.set_height_of_valid_position(test_node)
-            walkable = utility.is_point_walkeable(valid)
-            if walkable then
-                return valid
-            else
-                test_node = vec3:new(cur_node:x() - step, cur_node:y(), 0)
-                valid = utility.set_height_of_valid_position(test_node)
-                walkable = utility.is_point_walkeable(valid)
-            end
-            if walkable then
-                return valid
-            end
-        elseif cur_node:y() == path_node:y() then
-            console.print('pattern 2')
-            test_node = vec3:new(cur_node:x(), cur_node:y() + step, 0)
-            valid = utility.set_height_of_valid_position(test_node)
-            walkable = utility.is_point_walkeable(valid)
-            if walkable then
-                return valid
-            else
-            test_node = vec3:new(cur_node:x(), cur_node:y() - step, 0)
-                valid = utility.set_height_of_valid_position(test_node)
-                walkable = utility.is_point_walkeable(valid)
-            end
-            if walkable then
-                return valid
-            end
-        elseif (cur_node:x() > path_node:x() and cur_node:y() > path_node:y()) or
-            (cur_node:x() < path_node:x() and cur_node:y() < path_node:y())
-        then
-            console.print('pattern 3')
-            test_node = vec3:new(cur_node:x() - step, cur_node:y() + step, 0)
-            valid = utility.set_height_of_valid_position(test_node)
-            walkable = utility.is_point_walkeable(valid)
-            if walkable then
-                return valid
-            else
-            test_node = vec3:new(cur_node:x() + step, cur_node:y() - step, 0)
-                valid = utility.set_height_of_valid_position(test_node)
-                walkable = utility.is_point_walkeable(valid)
-            end
-            if walkable then
-                return valid
-            end
-        elseif (cur_node:x() < path_node:x() and cur_node:y() > path_node:y()) or
-            (cur_node:x() > path_node:x() and cur_node:y() < path_node:y())
-        then
-            console.print('pattern 4')
-            test_node = vec3:new(cur_node:x() + step, cur_node:y() + step, 0)
-            valid = utility.set_height_of_valid_position(test_node)
-            walkable = utility.is_point_walkeable(valid)
-            if walkable then
-                return valid
-            else
-            test_node = vec3:new(cur_node:x() - step, cur_node:y() - step, 0)
-                valid = utility.set_height_of_valid_position(test_node)
-                walkable = utility.is_point_walkeable(valid)
-            end
-            if walkable then
-                return valid
-            end
-        end
-    end
+    -- if path_node ~= nil and cur_node ~= nil then
+    --     if cur_node:x() == path_node:x() then
+    --         console.print('pattern 1')
+    --         test_node = vec3:new(cur_node:x() + step, cur_node:y(), 0)
+    --         test_node_str = vec_to_string(test_node)
+    --         valid = utility.set_height_of_valid_position(test_node)
+    --         walkable = utility.is_point_walkeable(valid)
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         else
+    --             test_node = vec3:new(cur_node:x() - step, cur_node:y(), 0)
+    --             test_node_str = vec_to_string(test_node)
+    --             valid = utility.set_height_of_valid_position(test_node)
+    --             walkable = utility.is_point_walkeable(valid)
+    --         end
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         end
+    --     elseif cur_node:y() == path_node:y() then
+    --         console.print('pattern 2')
+    --         test_node = vec3:new(cur_node:x(), cur_node:y() + step, 0)
+    --         test_node_str = vec_to_string(test_node)
+    --         valid = utility.set_height_of_valid_position(test_node)
+    --         walkable = utility.is_point_walkeable(valid)
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         else
+    --             test_node = vec3:new(cur_node:x(), cur_node:y() - step, 0)
+    --             test_node_str = vec_to_string(test_node)
+    --             valid = utility.set_height_of_valid_position(test_node)
+    --             walkable = utility.is_point_walkeable(valid)
+    --         end
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         end
+    --     elseif (cur_node:x() > path_node:x() and cur_node:y() > path_node:y()) or
+    --         (cur_node:x() < path_node:x() and cur_node:y() < path_node:y())
+    --     then
+    --         console.print('pattern 3')
+    --         test_node = vec3:new(cur_node:x() - step, cur_node:y() + step, 0)
+    --         test_node_str = vec_to_string(test_node)
+    --         valid = utility.set_height_of_valid_position(test_node)
+    --         walkable = utility.is_point_walkeable(valid)
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         else
+    --             test_node = vec3:new(cur_node:x() + step, cur_node:y() - step, 0)
+    --             test_node_str = vec_to_string(test_node)
+    --             valid = utility.set_height_of_valid_position(test_node)
+    --             walkable = utility.is_point_walkeable(valid)
+    --         end
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         end
+    --     elseif (cur_node:x() < path_node:x() and cur_node:y() > path_node:y()) or
+    --         (cur_node:x() > path_node:x() and cur_node:y() < path_node:y())
+    --     then
+    --         console.print('pattern 4')
+    --         test_node = vec3:new(cur_node:x() + step, cur_node:y() + step, 0)
+    --         test_node_str = vec_to_string(test_node)
+    --         valid = utility.set_height_of_valid_position(test_node)
+    --         walkable = utility.is_point_walkeable(valid)
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         else
+    --             test_node = vec3:new(cur_node:x() - step, cur_node:y() - step, 0)
+    --             test_node_str = vec_to_string(test_node)
+    --             valid = utility.set_height_of_valid_position(test_node)
+    --             walkable = utility.is_point_walkeable(valid)
+    --         end
+    --         if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+    --             explorer.unstuck_nodes[test_node_str] = test_node
+    --             return valid
+    --         end
+    --     end
+    -- end
+
     if cur_node ~= nil then
-        -- random nearby node
         console.print('pattern all')
         local x = cur_node:x()
         local y = cur_node:y()
-        
+
         local directions = {
             {-step, 0},  -- up
             {0, step}, -- right
@@ -234,15 +274,19 @@ local get_unstuck_node = function ()
             {step, step}, -- down-right
             {step, -step}, -- down-left
         }
+        -- randomize direction order
+        directions = shuffle_table(directions)
         for _, direction in ipairs(directions) do
             local dx = direction[1]
             local dy = direction[2]
             local new_x = x + dx
             local new_y = y + dy
-            local test_node = vec3:new(new_x, new_y, 0)
-            local valid = utility.set_height_of_valid_position(test_node)
-            local walkable = utility.is_point_walkeable(valid)
-            if walkable then
+            test_node = vec3:new(new_x, new_y, 0)
+            test_node_str = vec_to_string(test_node)
+            valid = utility.set_height_of_valid_position(test_node)
+            walkable = utility.is_point_walkeable(valid)
+            if walkable and explorer.unstuck_nodes[test_node_str] == nil then
+                explorer.unstuck_nodes[test_node_str] = test_node
                 return valid
             end
         end
@@ -252,22 +296,16 @@ end
 local unstuck = function (local_player)
     console.print('stuck')
     local cur_node = normalize_node(local_player:get_position())
-    console.print(vec_to_string(cur_node))
-    console.print(vec_to_string(explorer.target))
-    if explorer.path[1] ~= nil then
-        console.print(vec_to_string(explorer.path[1]))
-    else
-        console.print('nil')
+    local target_str = vec_to_string(explorer.target)
+    if explorer.last_stuck_target ~= target_str then
+        explorer.last_stuck_target = target_str
+        explorer.last_stuck_time = get_time_since_inject()
     end
     local unstuck_node = get_unstuck_node()
     if unstuck_node ~= nil then
-        console.print('node')
-        console.print(vec_to_string(unstuck_node))
-            -- try evade if not add to path
+        -- try evade if not add to path
         if local_player:is_spell_ready(337031) then
-            console.print('evading')
             local success = cast_spell.position(337031, unstuck_node, 0)
-            console.print(tostring(success))
         else
             table.insert(explorer.path, 1, unstuck_node)
         end
@@ -358,43 +396,59 @@ explorer.move = function ()
     local cur_node = normalize_node(player_pos)
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 then
-        if explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay then
-            for _, trav in ipairs(traversals) do
-                local diff_z = math.abs(trav:get_position():z() - player_pos:z())
-                if diff_z < 3 then
-                    interact_object(trav)
-                end
+        if explorer.last_trav ~= nil and
+            (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
+        then
+            local trav = explorer.last_trav
+            interact_object(trav)
+            local name = trav:get_skin_name()
+            if name:match('Jump') then
+                -- jump doesnt have traversal buff for some reason
+                explorer.target = nil
+                explorer.last_trav = nil
             end
         end
         if has_traversal_buff(local_player) then
-            explorer.trav_delay = get_time_since_inject() + 2
+            explorer.trav_delay = get_time_since_inject() + 4
             explorer.target = nil
-            return
+            explorer.last_trav = nil
         end
+    else
+        -- cast_spell.self(514030, 0)
+        -- cast_spell.self(517417, 0)
+        -- cast_spell.position(288106, player_pos, 0)
     end
-    if explorer.target == nil or distance(cur_node, explorer.target) <= 1 then
+
+    if not has_traversal_buff(local_player) and
+        explorer.last_trav == nil and
+        (explorer.target == nil or distance(cur_node, explorer.target) <= 1)
+    then
         if explorer.paused then return end
         if type(explorer.goal) == 'string' then
-        
+
         elseif explorer.goal == nil then
             explorer.target = select_target(nil)
             explorer.path = {}
         end
-    elseif explorer.last_update ~= nil and
+    elseif explorer.target ~= nil and
+        explorer.last_update ~= nil and
         explorer.last_update + 1 < get_time_since_inject() and
         not is_cced(local_player)
     then
         unstuck(local_player)
-        if explorer.last_update + 5 < get_time_since_inject() then
+        if explorer.last_stuck_time + 5 < get_time_since_inject() then
             -- unable to unstuck, just select new node
-            explorer.target = node_selector.select_node(local_player, explorer.target)
+            explorer.target = select_target(explorer.target)
             explorer.path = {}
         end
     end
-
-    if explorer.last_pos == nil or distance(cur_node, explorer.last_pos) >= 0.5 then
+    if explorer.last_pos == nil or
+        distance(cur_node, explorer.last_pos) >= 0.5 or
+        has_traversal_buff(local_player)
+    then
         explorer.last_pos = cur_node
         explorer.last_update = get_time_since_inject()
+        explorer.unstuck_nodes = {}
     end
 
     if explorer.target == nil then
@@ -413,7 +467,7 @@ explorer.move = function ()
         if #result == 0 then
             console.print('no path to target')
             if not explorer.paused then
-                explorer.target = node_selector.select_node(local_player, explorer.target)
+                explorer.target = select_target(explorer.target)
                 explorer.path = {}
             end
             return

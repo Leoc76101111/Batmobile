@@ -4,6 +4,7 @@ local settings = {
     plugin_label = gui.plugin_label,
     plugin_version = gui.plugin_version,
     enabled = true,
+    draw = false
 }
 
 function settings.get_keybind_state()
@@ -24,6 +25,7 @@ end
 
 function settings:update_settings()
     settings.enabled = gui.elements.main_toggle:get()
+    settings.draw = gui.elements.draw_keybind_toggle:get_state()
 end
 
 return settings

@@ -4,8 +4,8 @@ local gui          = require 'gui'
 local settings     = require 'core.settings'
 local external      = require 'core.external'
 local explorer     = require 'core.explorer'
--- local external     = require 'core.external'
 local drawing      = require 'core.drawing'
+local tracker      = require 'core.tracker'
 
 local local_player, player_position
 local debounce_time = nil
@@ -26,17 +26,22 @@ local function main_pulse()
     if local_player:is_dead() then
         revive_at_checkpoint()
     else
-        -- explorer.update()
-        -- -- local goal = vec3:new(-516.9560546875,-298.0712890625,32.373046875)
+        local start_update = os.clock()
+        explorer.update()
+        tracker.timer_update = os.clock() - start_update
+        -- BatmobilePlugin.pause(plugin_label)
+        -- local goal = vec3:new(-2058.5,-1081,32.373046875)
+        -- BatmobilePlugin.set_target(plugin_label, goal)
         -- local goal1 = vec3:new(-0.48046875, 4.6123046875, 0.0390625 )
         -- local goal2 = vec3:new(4.828125, 0.0380859375, 0.0390625 )
-        -- BatmobilePlugin.pause(plugin_label)
         -- if get_time_since_inject() % 2 < 1 then
         --     BatmobilePlugin.set_target(plugin_label, goal1)
         -- else
         --     BatmobilePlugin.set_target(plugin_label, goal2)
         -- end
-        -- explorer.move()
+        local start_move = os.clock()
+        explorer.move()
+        tracker.timer_update = os.clock() - start_move
     end
 end
 

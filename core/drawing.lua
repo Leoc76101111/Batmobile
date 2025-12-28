@@ -1,6 +1,7 @@
 local node_selector = require 'core.node_selector_dfs'
-local path_finder = require 'core.pathfinder_astar'
 local explorer = require 'core.explorer'
+local settings = require 'core.settings'
+local tracker = require 'core.tracker'
 
 local distance = function (a, b)
     local dx = math.abs(a:x() - b:x())
@@ -22,7 +23,8 @@ local drawing = {}
 drawing.draw_nodes = function ()
     local local_player = get_local_player()
     if local_player == nil then return end
-
+    if settings.draw ~= 1 then return end
+    local start_draw = os.clock()
     local max_dist = 50
 
     local visited = node_selector.visited
@@ -30,9 +32,9 @@ drawing.draw_nodes = function ()
     local backtrack = node_selector.backtrack
 
     local cur_pos = explorer.last_pos
+    local valid_cur_pos = utility.set_height_of_valid_position(local_player:get_position())
 
     if cur_pos ~= nil then
-        local valid_cur_pos = utility.set_height_of_valid_position(local_player:get_position())
         local perimeter = node_selector.get_perimeter(local_player)
         local path = explorer.path
 
@@ -90,22 +92,43 @@ drawing.draw_nodes = function ()
             end
         end
     end
+
+    if tracker.debug_pos ~= nil then
+        local valid = utility.set_height_of_valid_position(tracker.debug_pos)
+        graphics.circle_3d(valid, 5, color_white(255))
+        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+    end
+    if tracker.debug_node ~= nil then
+        local valid = vec3:new(tracker.debug_node:x(),tracker.debug_node:y(), valid_cur_pos:z())
+        graphics.circle_3d(valid, 5, color_white(255))
+        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+    end
+    if tracker.debug_actor ~= nil then
+        local valid = tracker.debug_actor:get_position()
+        graphics.circle_3d(valid, 5, color_white(255))
+        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+    end
+
     local visited_count = get_set_count(visited)
+    local visited_length = #tostring(visited_count)
+    if visited_length < 5 then visited_length = 5 end
+    tracker.timer_draw = os.clock() - start_draw
     local messages = {
         'visited   ' .. tostring(visited_count),
         'frontier  ' .. tostring(get_set_count(frontier)),
-        'backtrack ' .. tostring(#backtrack)
+        'backtrack ' .. tostring(#backtrack),
+        'u_time    ' .. string.format("%.3f",tracker.timer_update),
+        'm_time    ' .. string.format("%.3f",tracker.timer_move),
+        'd_time    ' .. string.format("%.3f",tracker.timer_draw),
     }
-    local x_offset = 130 + (#tostring(visited_count) * 11)
+    -- local x_offset = 130 + (#tostring(visited_count) * 11)
+    local x_offset = 130 + (visited_length * 11)
     local x_pos = get_screen_width() - x_offset
-    local y_pos = get_screen_height() - 80
+    local y_pos = get_screen_height() - 140
     for _, msg in ipairs(messages) do
         graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
         y_pos = y_pos + 20
     end
-
-    -- local valid = vec3:new(-737.5, -683.5, valid_cur_pos:z())
-    -- graphics.circle_3d(valid, 0.05, color_blue(255))
 end
 
 return drawing
