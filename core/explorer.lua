@@ -404,10 +404,9 @@ explorer.move = function ()
     if not local_player then return end
     local player_pos = local_player:get_position()
     local cur_node = normalize_node(player_pos)
-    local traversals = get_nearby_travs(local_player)
-    if #traversals > 0 then
-        local trav = explorer.last_trav
-        if trav ~= nil and distance(player_pos, trav:get_position()) <= 3 and
+    local trav = explorer.last_trav
+    if trav ~= nil then
+        if distance(player_pos, trav:get_position()) <= 3 and
             (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
         then
             interact_object(trav)
