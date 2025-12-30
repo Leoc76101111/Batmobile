@@ -132,7 +132,10 @@ explorer_dfs.update = function (local_player)
                     explorer_dfs.visited[node_str] = node
                     explorer_dfs.retry[node_str] = nil
                     if explorer_dfs.frontier[node_str] ~= nil then
-                        remove_frontier(node_str)
+                        local index = explorer_dfs.frontier[node_str]
+                        explorer_dfs.frontier_order[index] = nil
+                        explorer_dfs.frontier[node_str] = nil
+                        -- remove_frontier(node_str)
                     end
                 elseif explorer_dfs.frontier[node_str] == nil and
                     (explorer_dfs.visited[node_str] == nil or
@@ -143,9 +146,10 @@ explorer_dfs.update = function (local_player)
                     local valid = utility.set_height_of_valid_position(node)
                     local walkable = utility.is_point_walkeable(valid)
                     if walkable then
-                        explorer_dfs.frontier[node_str] = node
                         local index = #explorer_dfs.frontier_order
                         explorer_dfs.frontier_order[index+1] = node_str
+                        explorer_dfs.frontier[node_str] = index+1
+                        -- explorer_dfs.frontier[node_str] = node
                     end
                 end
             end
@@ -227,7 +231,7 @@ explorer_dfs.select_node = function (local_player, failed)
         if explorer_dfs.visited[most_recent_str] ~= nil then
             explorer_dfs.frontier[most_recent_str] = nil
         else
-            local frontier_node =  explorer_dfs.frontier[most_recent_str]
+            local frontier_node =  utils.string_to_vec(most_recent_str)
             if utils.distance(frontier_node, explorer_dfs.cur_pos) <= 20 then
                 explorer_dfs.frontier[most_recent_str] = nil
                 explorer_dfs.backtracking = false
