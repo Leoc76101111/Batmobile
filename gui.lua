@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '0.0.1'
+local plugin_version = '0.0.2'
 
 local gui = {}
 
