@@ -21,9 +21,9 @@ local settings = {
 }
 
 settings.get_keybind_state = function ()
-    local toggle_key = gui.elements.keybind_toggle:get_key();
-    local toggle_state = gui.elements.keybind_toggle:get_state();
-    local use_keybind = gui.elements.use_keybind:get()
+    local toggle_key = gui.elements.keybind_toggle:get_key()
+    local toggle_state = gui.elements.keybind_toggle:get_state()
+    local use_keybind = true
     -- If not using keybind, skip
     if not use_keybind then
         return true
