@@ -1,6 +1,7 @@
-local node_selector = require 'core.node_selector_dfs'
-local explorer = require 'core.explorer'
+local explorer_dfs = require 'core.explorer_dfs'
+local navigator = require 'core.navigator'
 local settings = require 'core.settings'
+local utils = require 'core.utils'
 local tracker = require 'core.tracker'
 
 local distance = function (a, b)
@@ -18,6 +19,13 @@ local get_set_count = function (set)
     end
     return counter
 end
+local get_max_length = function(messages)
+    local max = 0
+    for _, msg in ipairs(messages) do
+        if #msg > max then max = #msg end
+    end
+    return max
+end
 local drawing = {}
 
 drawing.draw_nodes = function ()
@@ -27,16 +35,17 @@ drawing.draw_nodes = function ()
     local start_draw = os.clock()
     local max_dist = 50
 
-    local visited = node_selector.visited
-    local frontier = node_selector.frontier
-    local backtrack = node_selector.backtrack
+    local visited = explorer_dfs.visited
+    local frontier = explorer_dfs.frontier
+    local backtrack = explorer_dfs.backtrack
+    local retry = explorer_dfs.retry
 
-    local cur_pos = explorer.last_pos
+    local cur_pos = navigator.last_pos
     local valid_cur_pos = utility.set_height_of_valid_position(local_player:get_position())
 
     if cur_pos ~= nil then
-        local perimeter = node_selector.get_perimeter(local_player)
-        local path = explorer.path
+        local perimeter = explorer_dfs.get_perimeter(local_player)
+        local path = navigator.path
 
         -- for _, node in pairs(frontier) do
         --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
@@ -112,23 +121,45 @@ drawing.draw_nodes = function ()
     local visited_count = get_set_count(visited)
     local visited_length = #tostring(visited_count)
     if visited_length < 5 then visited_length = 5 end
-    tracker.timer_draw = os.clock() - start_draw
-    local messages = {
-        'visited   ' .. tostring(visited_count),
-        'frontier  ' .. tostring(get_set_count(frontier)),
-        'backtrack ' .. tostring(#backtrack),
-        'u_time    ' .. string.format("%.3f",tracker.timer_update),
-        'm_time    ' .. string.format("%.3f",tracker.timer_move),
-        'd_time    ' .. string.format("%.3f",tracker.timer_draw),
+    local active_spell = local_player:get_active_spell_id()
+    local in_combat =  active_spell ~= nil and active_spell ~= -1 and active_spell ~= 186139
+    local is_cced = utils.is_cced(local_player)
+    local speed = local_player:get_current_speed()
+    local speed_str = string.format("%.3f",local_player:get_current_speed())
+    if speed < 10 then
+        speed_str = speed_str .. ' '
+    else
+    end
+    local messages_left = {
+        ' speed     ' .. speed_str,
+        ' visited   ' .. tostring(visited_count),
+        ' frontier  ' .. tostring(get_set_count(frontier)),
+        ' backtrack ' .. tostring(#backtrack),
+        ' retry     ' .. tostring(get_set_count(retry)),
     }
-    -- local x_offset = 130 + (#tostring(visited_count) * 11)
-    local x_offset = 130 + (visited_length * 11)
-    local x_pos = get_screen_width() - x_offset
-    local y_pos = get_screen_height() - 140
-    for _, msg in ipairs(messages) do
+    local messages_right = {
+        ' in_combat ' .. tostring(in_combat),
+        ' is_cc\'ed  ' .. tostring(is_cced),
+        ' u_time    ' .. string.format("%.3f",tracker.timer_update),
+        ' m_time    ' .. string.format("%.3f",tracker.timer_move),
+    }
+    local max_left = get_max_length(messages_left)
+    local max_right = get_max_length(messages_right)
+    local x_pos = get_screen_width() - 20 - (max_left * 11) - (max_right * 11)
+    local y_pos = get_screen_height() - 20 - (#messages_left * 20)
+    for _, msg in ipairs(messages_left) do
         graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
         y_pos = y_pos + 20
     end
+    x_pos = get_screen_width() - 20 - (max_right * 11)
+    y_pos = get_screen_height() - 40 - (#messages_right * 20)
+    for _, msg in ipairs(messages_right) do
+        graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
+        y_pos = y_pos + 20
+    end
+    tracker.timer_draw = os.clock() - start_draw
+    local msg = ' d_time    ' .. string.format("%.3f",tracker.timer_draw)
+    graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
 end
 
 return drawing

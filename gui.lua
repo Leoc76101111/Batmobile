@@ -1,4 +1,4 @@
-local plugin_label = 'batmobile_explorer'
+local plugin_label = 'batmobile'
 local plugin_version = '0.0.1'
 
 local gui = {}

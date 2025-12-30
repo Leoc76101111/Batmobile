@@ -1,64 +1,67 @@
-local plugin_label = 'batmobile_explorer'
+local plugin_label = 'batmobile'
 -- kept plugin label instead of waiting for update_tracker to set it
-local explorer = require 'core.explorer'
+local navigator = require 'core.navigator'
 local tracker = require 'core.tracker'
 
 local external = {
     name          = plugin_label
 }
-external.status = function ()
-    return tracker
+external.is_done = function ()
+    return navigator.is_done()
+end
+external.is_paused = function ()
+    return navigator.paused
 end
 external.pause = function (caller)
     tracker.external_caller = caller
     -- console.print('pause called by ' .. caller)
-    explorer.pause()
+    navigator.pause()
 end
 external.resume = function (caller)
     tracker.external_caller = caller
     -- console.print('resume called by ' .. caller)
-    explorer.unpause()
+    navigator.unpause()
 end
 external.reset = function (caller)
     tracker.external_caller = caller
     -- console.print('reset called by ' .. caller)
-    explorer.reset()
+    navigator.reset()
 end
 external.move = function (caller)
     tracker.external_caller = caller
     -- console.print('move called by ' .. caller)
     local start_move = os.clock()
-    explorer.move()
+    navigator.move()
     tracker.timer_update = os.clock() - start_move
 end
 external.update = function (caller)
     tracker.external_caller = caller
     -- console.print('update called by ' .. caller)
-    explorer.update()
+    navigator.update()
 end
 external.set_target = function(caller, target)
     tracker.external_caller = caller
     -- console.print('set_target called by ' .. caller)
-    explorer.set_target(target)
+    navigator.set_target(target)
 end
 external.set_goal = function(caller, target)
     tracker.external_caller = caller
     -- console.print('set_goal called by ' .. caller)
-    explorer.set_goal(target)
+    navigator.set_goal(target)
 end
 external.clear_target = function (caller)
     tracker.external_caller = caller
     -- console.print('clear_target called by ' .. caller)
-    explorer.clear_target()
+    navigator.clear_target()
 end
 external.clear_goal = function (caller)
     tracker.external_caller = caller
     -- console.print('clear_goal called by ' .. caller)
-    explorer.clear_goal()
+    navigator.clear_goal()
 end
 external.distance = function (caller, a, b)
     tracker.external_caller = caller
-    return explorer.distance(a, b)
+    return navigator.distance(a, b)
 end
 
 return external

@@ -1,9 +1,9 @@
-local node_selector = require 'core.node_selector_dfs'
+local explorer_dfs = require 'core.explorer_dfs'
 local path_finder = require 'core.pathfinder_astar'
 local utils = require 'core.utils'
 local tracker = require 'core.tracker'
 
-local explorer = {
+local navigator = {
     last_pos = nil,
     last_update = nil,
     target = nil,
@@ -25,7 +25,7 @@ local vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
 end
 local normalize_value = function (val)
-    local normalizer = explorer.normalizer
+    local normalizer = navigator.normalizer
     return tonumber(string.format("%.1f", math.floor(val * normalizer + 0.5) / normalizer))
 end
 local normalize_node = function (node)
@@ -61,15 +61,12 @@ local has_traversal_buff = function (local_player)
     end
     return false
 end
-local is_cced = function (local_player)
-    return false
-end
 local get_closeby_node = function (trav_node, max_dist)
     local local_player = get_local_player()
     if not local_player then return nil end
     local cur_node = normalize_node(local_player:get_position())
     local norm_trav = normalize_node(trav_node)
-    local step = explorer.step
+    local step = navigator.step
 
     local nodes = {}
     for i = norm_trav:x()-max_dist, norm_trav:x()+max_dist, step do
@@ -96,7 +93,7 @@ local select_target
 select_target = function (prev_target)
     local local_player = get_local_player()
     if not local_player then return nil end
-    explorer.is_custom_target = false
+    navigator.is_custom_target = false
     local player_pos = local_player:get_position()
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 then
@@ -109,7 +106,7 @@ select_target = function (prev_target)
             local trav_name = trav:get_skin_name()
             local trav_str = trav_name .. vec_to_string(trav_pos)
             local cur_dist = distance_z(player_pos, trav_pos)
-            if explorer.blacklisted_trav[trav_str] == nil and
+            if navigator.blacklisted_trav[trav_str] == nil and
                 (closest_trav == nil or cur_dist < closest_dist) and
                 distance(player_pos, trav_pos) <= 15
             then
@@ -122,24 +119,24 @@ select_target = function (prev_target)
         -- local diff_z = distance_z(closest_pos, player_pos)
         if closest_trav ~= nil and
             closest_dist <= 15 and
-            explorer.last_trav == nil and
+            navigator.last_trav == nil and
             closest_pos ~= nil and
             math.abs(closest_pos:z() - player_pos:z()) <= 3 and
-            (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
+            (navigator.trav_delay == nil or get_time_since_inject() > navigator.trav_delay)
         then
             local closest_node = get_closeby_node(closest_trav:get_position(), 2)
             if closest_node == nil then
-                explorer.blacklisted_trav[closest_str] = closest_str
+                navigator.blacklisted_trav[closest_str] = closest_str
                 return select_target(prev_target)
             end
-            explorer.last_trav = closest_trav
+            navigator.last_trav = closest_trav
             return closest_node
         end
     else
-        explorer.last_trav = nil
-        explorer.blacklisted_trav = {}
+        navigator.last_trav = nil
+        navigator.blacklisted_trav = {}
     end
-    return node_selector.select_node(local_player, prev_target)
+    return explorer_dfs.select_node(local_player, prev_target)
 end
 local function shuffle_table(tbl)
     local len = #tbl
@@ -155,20 +152,20 @@ local get_unstuck_node = function ()
     -- get a node that is perpendicular to the first node in path from current node
     -- i.e. turn 90 degress left or right 
     local unstuck_node = nil
-    local cur_node = explorer.last_pos
-    local step = explorer.movement_step
+    local cur_node = navigator.last_pos
+    local step = navigator.movement_step
     local test_node, test_node_str, valid, walkable
 
     
     -- -- to be worked on later
     -- local path_node = nil
-    -- for _, node in ipairs(explorer.path) do
+    -- for _, node in ipairs(navigator.path) do
     --     if distance(node, cur_node) >= 1 then
     --         if path_node == nil and
     --             -- move to nodes that is >= movement step 
-    --             (distance(node, cur_node) >= explorer.movement_step or
+    --             (distance(node, cur_node) >= navigator.movement_step or
     --             -- or if it is close to target
-    --             distance(node, explorer.target) == 0)
+    --             distance(node, navigator.target) == 0)
     --         then
     --             path_node = node
     --         end
@@ -182,8 +179,8 @@ local get_unstuck_node = function ()
     --         test_node_str = vec_to_string(test_node)
     --         valid = utility.set_height_of_valid_position(test_node)
     --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         else
     --             test_node = vec3:new(cur_node:x() - step, cur_node:y(), 0)
@@ -191,8 +188,8 @@ local get_unstuck_node = function ()
     --             valid = utility.set_height_of_valid_position(test_node)
     --             walkable = utility.is_point_walkeable(valid)
     --         end
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         end
     --     elseif cur_node:y() == path_node:y() then
@@ -201,8 +198,8 @@ local get_unstuck_node = function ()
     --         test_node_str = vec_to_string(test_node)
     --         valid = utility.set_height_of_valid_position(test_node)
     --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         else
     --             test_node = vec3:new(cur_node:x(), cur_node:y() - step, 0)
@@ -210,8 +207,8 @@ local get_unstuck_node = function ()
     --             valid = utility.set_height_of_valid_position(test_node)
     --             walkable = utility.is_point_walkeable(valid)
     --         end
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         end
     --     elseif (cur_node:x() > path_node:x() and cur_node:y() > path_node:y()) or
@@ -222,8 +219,8 @@ local get_unstuck_node = function ()
     --         test_node_str = vec_to_string(test_node)
     --         valid = utility.set_height_of_valid_position(test_node)
     --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         else
     --             test_node = vec3:new(cur_node:x() + step, cur_node:y() - step, 0)
@@ -231,8 +228,8 @@ local get_unstuck_node = function ()
     --             valid = utility.set_height_of_valid_position(test_node)
     --             walkable = utility.is_point_walkeable(valid)
     --         end
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         end
     --     elseif (cur_node:x() < path_node:x() and cur_node:y() > path_node:y()) or
@@ -243,8 +240,8 @@ local get_unstuck_node = function ()
     --         test_node_str = vec_to_string(test_node)
     --         valid = utility.set_height_of_valid_position(test_node)
     --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         else
     --             test_node = vec3:new(cur_node:x() - step, cur_node:y() - step, 0)
@@ -252,8 +249,8 @@ local get_unstuck_node = function ()
     --             valid = utility.set_height_of_valid_position(test_node)
     --             walkable = utility.is_point_walkeable(valid)
     --         end
-    --         if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             explorer.unstuck_nodes[test_node_str] = test_node_str
+    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
+    --             navigator.unstuck_nodes[test_node_str] = test_node_str
     --             return valid, test_node_str
     --         end
     --     end
@@ -287,8 +284,8 @@ local get_unstuck_node = function ()
             test_node_str = vec_to_string(test_node)
             valid = utility.set_height_of_valid_position(test_node)
             walkable = utility.is_point_walkeable(valid)
-            messages[#messages+1] = test_node_str .. '=' .. tostring(explorer.unstuck_nodes[test_node_str])
-            if walkable and explorer.unstuck_nodes[test_node_str] ~= 'injected' then
+            messages[#messages+1] = test_node_str .. '=' .. tostring(navigator.unstuck_nodes[test_node_str])
+            if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
                 for _, parts in ipairs(messages) do
                     msg = msg .. parts ..','
                 end
@@ -306,12 +303,12 @@ end
 local unstuck = function (local_player)
     console.print('stuck')
     console.print('current time ' .. get_time_since_inject())
-    console.print('update_time ' .. explorer.last_update)
+    console.print('update_time ' .. navigator.last_update)
     local cur_node = normalize_node(local_player:get_position())
     console.print(vec_to_string(cur_node))
-    console.print(vec_to_string(explorer.target))
-    if explorer.path[1] ~= nil then
-        console.print(vec_to_string(explorer.path[1]))
+    console.print(vec_to_string(navigator.target))
+    if navigator.path[1] ~= nil then
+        console.print(vec_to_string(navigator.path[1]))
     else
         console.print('nil')
     end
@@ -321,25 +318,25 @@ local unstuck = function (local_player)
         console.print(vec_to_string(unstuck_node))
         -- try evade if not add to path
         if local_player:is_spell_ready(337031) and
-            explorer.unstuck_nodes[unstuck_node_str] == nil
+            navigator.unstuck_nodes[unstuck_node_str] == nil
         then
             console.print('unstuck by evading')
-            explorer.unstuck_nodes[unstuck_node_str] = 'evaded'
+            navigator.unstuck_nodes[unstuck_node_str] = 'evaded'
             local success = cast_spell.position(337031, unstuck_node, 0)
             console.print(tostring(success))
             return
-        elseif explorer.unstuck_nodes[unstuck_node_str] == 'evaded' then
+        elseif navigator.unstuck_nodes[unstuck_node_str] == 'evaded' then
             console.print('unstuck by injecting path')
-            explorer.unstuck_nodes[unstuck_node_str] = 'injected'
-            table.insert(explorer.path, 1, unstuck_node)
+            navigator.unstuck_nodes[unstuck_node_str] = 'injected'
+            table.insert(navigator.path, 1, unstuck_node)
             return
         end
     end
     console.print('unstuck by choosing new target')
-    explorer.target = select_target(explorer.target)
-    explorer.unstuck_nodes = {}
+    navigator.target = select_target(navigator.target)
+    navigator.unstuck_nodes = {}
 end
-explorer.distance = function (a, b)
+navigator.distance = function (a, b)
     if a.get_position then
         a = a:get_position()
     end
@@ -350,73 +347,69 @@ explorer.distance = function (a, b)
     b = normalize_node(b)
     return distance(a, b)
 end
-explorer.is_done = function ()
-    return explorer.done
+navigator.is_done = function ()
+    return navigator.done
 end
-explorer.pause = function ()
-    explorer.paused = true
+navigator.pause = function ()
+    navigator.paused = true
     tracker.paused = true
 end
-explorer.unpause = function ()
-    explorer.paused = false
+navigator.unpause = function ()
+    navigator.paused = false
     tracker.paused = false
 end
-explorer.update = function ()
-    if utils.player_loading() then
-        -- extend last_update so that it doesnt trigger unstuck straight after loading
-        explorer.last_update = get_time_since_inject() + 5
-        explorer.unstuck_nodes = {}
-    end
+navigator.update = function ()
     local local_player = get_local_player()
     if not local_player then return end
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 and has_traversal_buff(local_player) then return end
-    node_selector.update(local_player)
+    explorer_dfs.update(local_player)
 end
-explorer.reset = function ()
-    node_selector.reset()
-    explorer.target = nil
-    explorer.done = false
-    explorer.path = {}
-    explorer.last_trav = nil
-    explorer.trav_delay = nil
-    explorer.last_pos = nil
-    explorer.done_delay = nil
-    explorer.unstuck_nodes = {}
-    explorer.blacklisted_trav = {}
+navigator.reset = function ()
+    explorer_dfs.reset()
+    navigator.target = nil
+    navigator.done = false
+    navigator.path = {}
+    navigator.last_trav = nil
+    navigator.trav_delay = nil
+    navigator.last_pos = nil
+    navigator.done_delay = nil
+    navigator.unstuck_nodes = {}
+    navigator.blacklisted_trav = {}
 end
-explorer.set_target = function (target)
+navigator.set_target = function (target)
     if target.get_position then
         target = target:get_position()
     end
     local new_target = normalize_node(target)
-    if explorer.target == nil or
-        distance(explorer.target, new_target) > 0 or
-        #explorer.path < 5
+    if navigator.target == nil or
+        distance(navigator.target, new_target) > 0 or
+        #navigator.path < 5
     then
-        explorer.is_custom_target = false
-        explorer.target = new_target
-        explorer.path = {}
+        navigator.is_custom_target = false
+        navigator.target = new_target
+        navigator.path = {}
     end
 end
-explorer.clear_target = function ()
-    explorer.target = nil
+navigator.clear_target = function ()
+    navigator.target = nil
+    navigator.path = {}
 end
-explorer.clear_goal = function()
-    explorer.goal = nil
+navigator.clear_goal = function()
+    navigator.goal = nil
 end
-explorer.set_goal = function (goal)
+navigator.set_goal = function (goal)
     if type(goal) == 'string' then
         
     elseif goal.get_position then
-        explorer.goal = normalize_node(goal:get_position())
-        if distance(explorer.last_pos, explorer.goal) <= 50 then
-            explorer.set_target(explorer.goal)
+        navigator.goal = normalize_node(goal:get_position())
+        if distance(navigator.last_pos, navigator.goal) <= 50 then
+            navigator.set_target(navigator.goal)
         end
     elseif goal.x and goal.y and goal.z then
-        explorer.goal = normalize_node(goal)
-        if distance(explorer.last_pos, explorer.goal) <= 50 then
-            explorer.set_target(explorer.goal)
+        navigator.goal = normalize_node(goal)
+        if distance(navigator.last_pos, navigator.goal) <= 50 then
+            navigator.set_target(navigator.goal)
         end
     else
         -- not implemented
@@ -425,30 +418,35 @@ end
 local vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
 end
-explorer.move = function ()
+navigator.move = function ()
     local local_player = get_local_player()
     if not local_player then return end
     local player_pos = local_player:get_position()
     local cur_node = normalize_node(player_pos)
-    local trav = explorer.last_trav
-    if trav ~= nil then
-        if distance(player_pos, trav:get_position()) <= 3 and
-            (explorer.trav_delay == nil or get_time_since_inject() > explorer.trav_delay)
+    local traversals = get_nearby_travs(local_player)
+    if #traversals > 0 then
+        local trav = navigator.last_trav
+        if trav ~= nil and distance(player_pos, trav:get_position()) <= 3 and
+            (navigator.trav_delay == nil or get_time_since_inject() > navigator.trav_delay)
         then
             interact_object(trav)
             local name = trav:get_skin_name()
             if name:match('Jump') then
                 -- jump doesnt have traversal buff for some reason
-                explorer.target = nil
-                explorer.last_trav = nil
+                navigator.target = nil
+                navigator.last_trav = nil
+                navigator.trav_delay = get_time_since_inject() + 2
             end
         end
         if has_traversal_buff(local_player) then
-            explorer.trav_delay = get_time_since_inject() + 4
-            explorer.target = nil
-            explorer.last_trav = nil
+            navigator.trav_delay = get_time_since_inject() + 2
+            navigator.target = nil
+            navigator.last_trav = nil
         end
-    elseif not explorer.paused then
+    end
+    if not navigator.paused and navigator.last_trav == nil and
+        not has_traversal_buff(local_player)
+    then
         -- cast_spell.self(514030, 0)
         -- cast_spell.self(517417, 0)
         -- cast_spell.position(288106, player_pos, 0)
@@ -457,71 +455,74 @@ explorer.move = function ()
     local update_timeout = 1
     if utils.player_in_town() then update_timeout = 10 end
     if not has_traversal_buff(local_player) and
-        explorer.last_trav == nil and
-        (explorer.target == nil or distance(cur_node, explorer.target) <= 1)
+        navigator.last_trav == nil and
+        (navigator.target == nil or distance(cur_node, navigator.target) <= 1)
     then
-        if explorer.paused then return end
-        if type(explorer.goal) == 'string' then
+        if navigator.paused then return end
+        if type(navigator.goal) == 'string' then
 
-        elseif explorer.goal == nil then
-            explorer.target = select_target(nil)
-            explorer.path = {}
+        elseif navigator.goal == nil then
+            navigator.target = select_target(nil)
+            navigator.path = {}
         end
-    elseif explorer.target ~= nil and
-        explorer.last_update ~= nil and
-        explorer.last_update + update_timeout < get_time_since_inject() and
-        not is_cced(local_player)
+    elseif navigator.target ~= nil and
+        navigator.last_update ~= nil and
+        navigator.last_update + update_timeout < get_time_since_inject() and
+        not utils.is_cced(local_player)
     then
         unstuck(local_player)
-        explorer.last_update = explorer.last_update + 0.25
+        navigator.last_update = navigator.last_update + 0.25
     end
-    if explorer.last_pos == nil or
-        distance(cur_node, explorer.last_pos) >= 0.5 or
-        has_traversal_buff(local_player)
+    if navigator.last_pos == nil or
+        distance(cur_node, navigator.last_pos) >= 0.5 or
+        has_traversal_buff(local_player) or
+        utils.is_cced(local_player)
     then
-        explorer.last_pos = cur_node
-        explorer.unstuck_nodes = {}
-        if explorer.last_update == nil or explorer.last_update < get_time_since_inject() then
-            explorer.last_update = get_time_since_inject()
+        navigator.last_pos = cur_node
+        navigator.unstuck_nodes = {}
+        if navigator.last_update == nil or navigator.last_update < get_time_since_inject() then
+            navigator.last_update = get_time_since_inject()
         end
     end
 
-    if explorer.target == nil then
-        if explorer.done_delay ~= nil and explorer.done_delay < get_time_since_inject() then
-            explorer.done = true
+    if navigator.target == nil and not has_traversal_buff(local_player) then
+        if navigator.done_delay ~= nil and navigator.done_delay < get_time_since_inject() then
+            navigator.done = true
             console.print('finish exploration')
-        elseif explorer.done_delay == nil then
-            explorer.done_delay = get_time_since_inject() + 1
+        elseif navigator.done_delay == nil then
+            navigator.done_delay = get_time_since_inject() + 1
         end
         return
     else
-        explorer.done_delay = nil
+        navigator.done_delay = nil
     end
 
-    if #explorer.path == 0 or distance(explorer.path[1],explorer.last_pos) >= 2 then
-        local result = path_finder.find_path(explorer.last_pos, explorer.target)
+    if navigator.target ~= nil and
+        (#navigator.path == 0 or distance(navigator.path[1],navigator.last_pos) >= 2)
+    then
+        local result = path_finder.find_path(navigator.last_pos, navigator.target)
         if #result == 0 then
-            console.print('no path to target ' .. vec_to_string(explorer.target))
-            tracker.debug_node = explorer.target
-            if not explorer.paused then
-                explorer.target = select_target(explorer.target)
-                explorer.path = {}
+            -- console.print('no path to target ' .. vec_to_string(navigator.target))
+            tracker.debug_node = navigator.target
+            if not navigator.paused then
+                navigator.target = select_target(navigator.target)
+                navigator.path = {}
             end
             return
         end
         tracker.debug_node = nil
-        explorer.path = result
+        navigator.path = result
     end
 
     local moved = false
     local new_path = {}
-    for _, node in ipairs(explorer.path) do
+    for _, node in ipairs(navigator.path) do
         if distance(node, cur_node) >= 1 then
             if not moved and
                 -- move to nodes that is >= movement step 
-                (distance(node, cur_node) >= explorer.movement_step or
+                (distance(node, cur_node) >= navigator.movement_step or
                 -- or if it is close to target
-                distance(node, explorer.target) == 0)
+                (navigator.target ~= nil and distance(node, navigator.target) == 0))
             then
                 pathfinder.request_move(node)
                 moved = true
@@ -529,8 +530,8 @@ explorer.move = function ()
             new_path[#new_path+1] = node
         end
     end
-    explorer.path = new_path
+    navigator.path = new_path
 end
 
 
-return explorer
+return navigator

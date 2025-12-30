@@ -21,7 +21,7 @@ end
 function utils.player_in_zone(zname)
     return get_current_world():get_current_zone_name() == zname
 end
-function utils.player_loading(zname)
+function utils.player_loading()
     return utils.player_in_zone('[sno none]')
 end
 function utils.player_in_town()
@@ -30,5 +30,19 @@ function utils.player_in_town()
     else
         return false
     end
+end
+function utils.is_cced(local_player)
+    local debuffs = {
+        ['39809'] = 'GenericCrowdControlBuff',
+        ['290961'] = 'GenericChillBuff',
+        ['290962'] = 'GenericFrozenBuff',
+    }
+    local buffs = local_player:get_buffs()
+    for _, buff in pairs(buffs) do
+        if debuffs[buff.name_hash] then
+            return true
+        end
+    end
+    return false
 end
 return utils
