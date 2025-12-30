@@ -1,3 +1,5 @@
+local utils = require 'core.utils'
+local settings = require 'core.settings'
 
 local explorer_dfs = {
     visited = {},
@@ -10,29 +12,10 @@ local explorer_dfs = {
     last_dir = nil,
     radius = 10,
     frontier_radius = 11,
-    step = 0.5,
-    normalizer = 2, -- *10/5 to get steps of 0.5
     backtracking = false,
     backtrack_node = nil,
     backtrack_failed_time = -1
 }
-local normalize_value = function (val)
-    local normalizer = explorer_dfs.normalizer
-    return tonumber(string.format("%.1f", math.floor(val * normalizer + 0.5) / normalizer))
-end
-local normalize_node = function (node)
-    local norm_x = normalize_value(node:x())
-    local norm_y = normalize_value(node:y())
-    return vec3:new(norm_x, norm_y, 0)
-end
-local vec_to_string = function (node)
-    return tostring(node:x()) .. ',' .. tostring(node:y())
-end
-local distance = function (a, b)
-    local dx = math.abs(a:x() - b:x())
-    local dy = math.abs(a:y() - b:y())
-    return math.max(dx, dy) + (math.sqrt(2) - 1) * math.min(dx, dy)
-end
 local remove_frontier = function (node_str)
     explorer_dfs.frontier[node_str] = nil
     local key = nil
@@ -50,9 +33,8 @@ local get_perimeter = function (node)
     local perimeter = {}
 
     local cur_pos = explorer_dfs.cur_pos
-    local valid_cur_pos = utility.set_height_of_valid_position(cur_pos)
     local radius = explorer_dfs.radius
-    local step = explorer_dfs.step
+    local step = settings.step
     local x = cur_pos:x()
     local y = cur_pos:y()
     local min_x = x - radius
@@ -64,10 +46,10 @@ local get_perimeter = function (node)
             if not (i == node:x() and j == node:y()) and
                 not (i ~= min_x and i ~= max_x and j ~= min_y and j ~= max_y)
             then
-                local norm_x = normalize_value(i)
-                local norm_y = normalize_value(j)
+                local norm_x = utils.normalize_value(i)
+                local norm_y = utils.normalize_value(j)
                 local new_node =  vec3:new(norm_x, norm_y, 0)
-                local new_node_str = vec_to_string(new_node)
+                local new_node_str = utils.vec_to_string(new_node)
                 if explorer_dfs.visited[new_node_str] == nil or
                     explorer_dfs.retry[new_node_str] ~= nil
                 then
@@ -102,13 +84,13 @@ explorer_dfs.reset = function ()
 end
 explorer_dfs.set_current_pos = function (local_player)
     explorer_dfs.prev_pos = explorer_dfs.cur_pos
-    explorer_dfs.cur_pos = normalize_node(local_player:get_position())
+    explorer_dfs.cur_pos = utils.normalize_node(local_player:get_position())
     if not explorer_dfs.backtracking then
         if #explorer_dfs.backtrack > 0 then
             local last_index = #explorer_dfs.backtrack
             local last_pos = explorer_dfs.backtrack[last_index]
 
-            local dist = distance(last_pos, explorer_dfs.cur_pos)
+            local dist = utils.distance(last_pos, explorer_dfs.cur_pos)
             if dist >= 4 then
                 explorer_dfs.backtrack[last_index+1] = explorer_dfs.cur_pos
             end
@@ -122,14 +104,14 @@ explorer_dfs.update = function (local_player)
     local player_pos = local_player:get_position()
     local cur_pos = explorer_dfs.cur_pos
     local prev_pos = explorer_dfs.prev_pos
-    if prev_pos ~= nil and distance(cur_pos,prev_pos) == 0 then return end
+    if prev_pos ~= nil and utils.distance(cur_pos,prev_pos) == 0 then return end
 
     local x = cur_pos:x()
     local y = cur_pos:y()
 
     local f_radius = explorer_dfs.frontier_radius
     local v_radius = explorer_dfs.radius
-    local step = explorer_dfs.step
+    local step = settings.step
 
     local f_min_x = x - f_radius
     local f_max_x = x + f_radius
@@ -143,10 +125,10 @@ explorer_dfs.update = function (local_player)
 
     for i = f_min_x, f_max_x, step do
         for j = f_min_y, f_max_y, step do
-            local norm_x = normalize_value(i)
-            local norm_y = normalize_value(j)
+            local norm_x = utils.normalize_value(i)
+            local norm_y = utils.normalize_value(j)
             local node =  vec3:new(norm_x, norm_y, 0)
-            local node_str = vec_to_string(node)
+            local node_str = utils.vec_to_string(node)
 
             if explorer_dfs.visited[node_str] == nil then
                 if i >= v_min_x and i <= v_max_x and j >= v_min_y and j <= v_max_y then
@@ -180,16 +162,16 @@ explorer_dfs.select_node = function (local_player, failed)
     if failed ~= nil then
         -- if failed at backtrack, try again
         if explorer_dfs.backtracking then
-            if explorer_dfs.backtrack_node ~= vec_to_string(failed) then
+            if explorer_dfs.backtrack_node ~= utils.vec_to_string(failed) then
                 explorer_dfs.backtrack_failed_time = get_time_since_inject()
-                explorer_dfs.backtrack_node = vec_to_string(failed)
+                explorer_dfs.backtrack_node = utils.vec_to_string(failed)
                 return failed
             elseif explorer_dfs.backtrack_failed_time + 5 < get_time_since_inject() then
                 return failed
             end
         end
-        failed = normalize_node(failed)
-        local failed_str = vec_to_string(failed)
+        failed = utils.normalize_node(failed)
+        local failed_str = utils.vec_to_string(failed)
         explorer_dfs.visited[failed_str] = failed
         explorer_dfs.retry[failed_str] = failed
     end
@@ -249,7 +231,7 @@ explorer_dfs.select_node = function (local_player, failed)
             explorer_dfs.frontier[most_recent_str] = nil
         else
             local frontier_node =  explorer_dfs.frontier[most_recent_str]
-            if distance(frontier_node, explorer_dfs.cur_pos) <= 20 then
+            if utils.distance(frontier_node, explorer_dfs.cur_pos) <= 20 then
                 explorer_dfs.frontier[most_recent_str] = nil
                 explorer_dfs.backtracking = false
                 return frontier_node
@@ -266,7 +248,7 @@ explorer_dfs.select_node = function (local_player, failed)
             local last_index = #explorer_dfs.backtrack
             local last_pos = explorer_dfs.backtrack[last_index]
             explorer_dfs.backtrack[last_index] = nil
-            if distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
+            if utils.distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
                 explorer_dfs.backtracking = true
                 return last_pos
             end

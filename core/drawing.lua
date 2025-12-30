@@ -4,21 +4,6 @@ local settings = require 'core.settings'
 local utils = require 'core.utils'
 local tracker = require 'core.tracker'
 
-local distance = function (a, b)
-    local dx = math.abs(a:x() - b:x())
-    local dy = math.abs(a:y() - b:y())
-    return math.max(dx, dy) + (math.sqrt(2) - 1) * math.min(dx, dy)
-end
-local vec_to_string = function (node)
-    return tostring(node:x()) .. ',' .. tostring(node:y())
-end
-local get_set_count = function (set)
-    local counter = 0
-    for _, item in pairs(set) do
-        counter = counter + 1
-    end
-    return counter
-end
 local get_max_length = function(messages)
     local max = 0
     for _, msg in ipairs(messages) do
@@ -50,21 +35,21 @@ drawing.draw_nodes = function ()
         -- for _, node in pairs(frontier) do
         --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
         --     -- valid = utility.set_height_of_valid_position(node)
-        --     if distance(cur_pos, node) <= max_dist then
+        --     if utils.distance(cur_pos, node) <= max_dist then
         --         graphics.circle_3d(valid, 0.05, color_green(255))
         --     end
         -- end
         -- for _, node in pairs(visited) do
         --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
         --     -- valid = utility.set_height_of_valid_position(node)
-        --     if distance(cur_pos, node) <= max_dist then
+        --     if utils.distance(cur_pos, node) <= max_dist then
         --         graphics.circle_3d(valid, 0.05, color_white(255))
         --     end
         -- end
         -- for _, node in pairs(perimeter) do
         --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
         --     -- valid = utility.set_height_of_valid_position(node)
-        --     if distance(cur_pos, node) <= max_dist then
+        --     if utils.distance(cur_pos, node) <= max_dist then
         --         graphics.circle_3d(valid, 0.05, color_blue(255))
         --     end
         -- end
@@ -90,7 +75,7 @@ drawing.draw_nodes = function ()
         for _, node in pairs(path) do
             local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
             -- valid = utility.set_height_of_valid_position(node)
-            if distance(cur_pos, node) <= max_dist then
+            if utils.distance(cur_pos, node) <= max_dist then
                 graphics.circle_3d(valid, 0.05, color_red(255))
                 if prev_node ~= nil then
                     graphics.line(valid, prev_node, color_red(255), 1)
@@ -118,11 +103,10 @@ drawing.draw_nodes = function ()
         graphics.line(valid_cur_pos, valid, color_white(255), 1)
     end
 
-    local visited_count = get_set_count(visited)
+    local visited_count = utils.get_set_count(visited)
     local visited_length = #tostring(visited_count)
     if visited_length < 5 then visited_length = 5 end
-    local active_spell = local_player:get_active_spell_id()
-    local in_combat =  active_spell ~= nil and active_spell ~= -1 and active_spell ~= 186139
+    local in_combat =  utils.in_combat(local_player)
     local is_cced = utils.is_cced(local_player)
     local speed = local_player:get_current_speed()
     local speed_str = string.format("%.3f",local_player:get_current_speed())
@@ -133,9 +117,9 @@ drawing.draw_nodes = function ()
     local messages_left = {
         ' speed     ' .. speed_str,
         ' visited   ' .. tostring(visited_count),
-        ' frontier  ' .. tostring(get_set_count(frontier)),
+        ' frontier  ' .. tostring(utils.get_set_count(frontier)),
         ' backtrack ' .. tostring(#backtrack),
-        ' retry     ' .. tostring(get_set_count(retry)),
+        ' retry     ' .. tostring(utils.get_set_count(retry)),
     }
     local messages_right = {
         ' in_combat ' .. tostring(in_combat),

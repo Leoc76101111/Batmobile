@@ -2,6 +2,7 @@ local plugin_label = 'batmobile'
 -- kept plugin label instead of waiting for update_tracker to set it
 local navigator = require 'core.navigator'
 local tracker = require 'core.tracker'
+local utils = require 'core.utils'
 
 local external = {
     name          = plugin_label
@@ -61,7 +62,7 @@ external.clear_goal = function (caller)
 end
 external.distance = function (caller, a, b)
     tracker.external_caller = caller
-    return navigator.distance(a, b)
+    return utils.distance(a, b)
 end
 
 return external
