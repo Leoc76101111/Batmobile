@@ -324,7 +324,7 @@ local unstuck = function (local_player)
             navigator.unstuck_nodes[unstuck_node_str] = 'evaded'
             cast_spell.position(337031, unstuck_node, 0)
             return
-        elseif navigator.unstuck_nodes[unstuck_node_str] == 'evaded' then
+        elseif navigator.unstuck_nodes[unstuck_node_str] ~= 'injected' then
             navigator.unstuck_nodes[unstuck_node_str] = 'injected'
             table.insert(navigator.path, 1, unstuck_node)
             return
@@ -430,7 +430,9 @@ navigator.move = function ()
     end
 
     -- movement spells
-    if navigator.target ~= nil and utils.distance(cur_node, navigator.target) <= 8 then
+    if not utils.player_in_town() and navigator.target ~= nil and
+        utils.distance(cur_node, navigator.target) <= 8
+    then
         local movement_spell_id, need_raycast = get_movement_spell_id(local_player)
         local raycast_success = true
         if need_raycast then
