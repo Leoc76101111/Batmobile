@@ -50,10 +50,7 @@ local get_perimeter = function (node)
                 local norm_y = utils.normalize_value(j)
                 local new_node =  vec3:new(norm_x, norm_y, 0)
                 local new_node_str = utils.vec_to_string(new_node)
-                if explorer_dfs.visited[new_node_str] == nil or
-                    explorer_dfs.retry[new_node_str] ~= nil
-                then
-                    explorer_dfs.retry[new_node_str] = nil
+                if explorer_dfs.visited[new_node_str] == nil then
                     explorer_dfs.visited[new_node_str] = nil
                     local valid = utility.set_height_of_valid_position(new_node)
                     local walkable = utility.is_point_walkeable(valid)
