@@ -1,7 +1,29 @@
 local plugin_label = 'batmobile'
 local plugin_version = '0.0.3'
 
-local utils      = require 'core.utils'
+local get_character_class = function (local_player)
+    if not local_player then
+        local_player = get_local_player();
+    end
+    if not local_player then return end
+    local class_id = local_player:get_character_class_id()
+    local character_classes = {
+        [0] = 'sorcerer',
+        [1] = 'barbarian',
+        [3] = 'rogue',
+        [5] = 'druid',
+        [6] = 'necromancer',
+        [7] = 'spiritborn',
+        [8] = 'default', -- new class in expansion, dont know name yet
+        [9] = 'paladin'
+    }
+    if character_classes[class_id] then
+        return character_classes[class_id]
+    else
+        return 'default'
+    end
+end
+
 local gui = {}
 
 local function create_checkbox(value, key)
@@ -38,7 +60,7 @@ function gui.render()
         gui.elements.keybind_toggle:render('Toggle Keybind', 'Toggle the bot for quick enable')
         gui.elements.draw_keybind_toggle:render('Toggle Drawing', 'Toggle drawing')
     -- end
-    local class = utils.get_character_class()
+    local class = get_character_class()
     if class ~= 'default' and class ~= 'druid' and class ~= 'necromancer' then
         if gui.elements.movement_tree:push('Movement Spells') then
             gui.elements.use_movement:render('use movement spells', 'use movement spells')
