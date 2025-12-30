@@ -325,6 +325,7 @@ local unstuck = function (local_player)
             cast_spell.position(337031, unstuck_node, 0)
             return
         elseif navigator.unstuck_nodes[unstuck_node_str] ~= 'injected' then
+            console.print('unstuck by injecting path')
             navigator.unstuck_nodes[unstuck_node_str] = 'injected'
             table.insert(navigator.path, 1, unstuck_node)
             return
@@ -481,10 +482,19 @@ navigator.move = function ()
         end
     end
 
-    if navigator.target == nil and not has_traversal_buff(local_player) then
+    if navigator.target == nil and
+        navigator.last_trav == nil and
+        not has_traversal_buff(local_player)
+    then
         if navigator.done_delay ~= nil and navigator.done_delay < get_time_since_inject() then
-            navigator.done = true
-            console.print('finish exploration')
+            if #explorer_dfs.frontier_order > 0 and #explorer_dfs.backtrack == 0 then
+                console.print('not done but no more backtrack, reseting')
+                navigator.reset()
+                return
+            else
+                navigator.done = true
+                console.print('finish exploration')
+            end
         elseif navigator.done_delay == nil then
             navigator.done_delay = get_time_since_inject() + 1
         end
