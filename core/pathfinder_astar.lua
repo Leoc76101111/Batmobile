@@ -84,7 +84,6 @@ pathfinder_astar.find_path = function (start, goal)
     pathfinder_astar.counter = 0
     while utils.get_set_count(open_set) > 0 do
         if pathfinder_astar.counter > 1500 then
-            console.print('no path to target (over counter)' .. utils.vec_to_string(goal))
             return {}
         end
         pathfinder_astar.counter = pathfinder_astar.counter + 1
@@ -111,7 +110,6 @@ pathfinder_astar.find_path = function (start, goal)
             end
         end
     end
-    console.print('no path to target (no openset)' .. utils.vec_to_string(goal))
     return {}
 end
 

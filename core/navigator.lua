@@ -442,6 +442,7 @@ navigator.move = function ()
     then
         local result = path_finder.find_path(navigator.last_pos, navigator.target)
         if #result == 0 then
+            console.print('no path to target ' .. utils.vec_to_string(navigator.target))
             tracker.debug_node = navigator.target
             if not navigator.paused then
                 navigator.target = select_target(navigator.target)
