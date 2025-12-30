@@ -59,6 +59,13 @@ local function main_pulse()
     -- local start_move = os.clock()
     -- navigator.move()
     -- tracker.timer_update = os.clock() - start_move
+
+    -- local buffs = local_player:get_buffs()
+    -- for _, buff in pairs(buffs) do
+    --     if tostring(buff.name_hash) == '386126' then
+    --         console.print(buff:get_remaining_time())
+    --     end
+    -- end
 end
 
 local function render_pulse()

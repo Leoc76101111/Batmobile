@@ -68,6 +68,51 @@ local get_closeby_node = function (trav_node, max_dist)
     end
     return nil
 end
+local get_movement_spell_id = function(local_player)
+    if not settings.use_movement then return end
+    local class = utils.get_character_class(local_player)
+    if class == 'sorcerer' then
+        if settings.use_teleport and utility.is_spell_ready(288106) then
+            return 288106, false
+        end
+        if settings.use_teleport_enchanted and utility.is_spell_ready(959728) then
+            return 959728, false
+        end
+    elseif class == 'spiritborn' then
+        if settings.use_soar and utility.is_spell_ready(1871821) then
+            return 1871821, false
+        end
+        if settings.use_rushing_claw and utility.is_spell_ready(1871761) then
+            return 1871761, false
+        end
+        if settings.use_hunter and utility.is_spell_ready(1663206) then
+            return 1663206, false
+        end
+    elseif class == 'rogue' then
+        if settings.use_dash and utility.is_spell_ready(358761) then
+            return 358761, false
+        end
+    elseif class == 'barbarian' then
+        if settings.use_leap and utility.is_spell_ready(196545) then
+            return 196545, false
+        end
+        if settings.use_charge and utility.is_spell_ready(204662) then
+            return 204662, true
+        end
+    elseif class == 'paladin' then
+        if settings.use_falling_star and utility.is_spell_ready(2106904) then
+            return 2106904, true
+        end
+        if settings.use_aoj and utility.is_spell_ready(2297125) then
+            return 2297125, true
+        end
+    end
+    -- class == 'default' or class == 'druid' or class == 'necromancer'
+    if settings.use_evade and utility.is_spell_ready(337031) then
+        return 337031, false
+    end
+    return nil, false
+end
 local select_target
 select_target = function (prev_target)
     local local_player = get_local_player()
@@ -269,11 +314,10 @@ local get_unstuck_node = function ()
     return nil, nil
 end
 local unstuck = function (local_player)
-    local cur_node = utils.normalize_node(local_player:get_position())
     local unstuck_node, unstuck_node_str = get_unstuck_node()
     if unstuck_node ~= nil and unstuck_node_str ~= nil then
         -- try evade if not add to path
-        if local_player:is_spell_ready(337031) and
+        if utility.is_spell_ready(337031) and
             navigator.unstuck_nodes[unstuck_node_str] == nil
         then
             console.print('unstuck by evading')
@@ -384,12 +428,18 @@ navigator.move = function ()
             navigator.last_trav = nil
         end
     end
-    if not navigator.paused and navigator.last_trav == nil and
-        not has_traversal_buff(local_player)
-    then
-        -- cast_spell.self(514030, 0)
-        -- cast_spell.self(517417, 0)
-        -- cast_spell.position(288106, player_pos, 0)
+
+    -- movement spells
+    if navigator.target ~= nil and utils.distance(cur_node, navigator.target) <= 8 then
+        local movement_spell_id, need_raycast = get_movement_spell_id(local_player)
+        local raycast_success = true
+        if need_raycast then
+            raycast_success = utility.is_ray_cast_walkeable(cur_node, navigator.target, 0.5, 0.5)
+        end
+        if movement_spell_id ~= nil and raycast_success then
+            local success = cast_spell.position(movement_spell_id, navigator.target, 0)
+            if success then navigator.update() end
+        end
     end
 
     local update_timeout = 1

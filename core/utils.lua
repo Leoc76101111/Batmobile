@@ -91,4 +91,26 @@ utils.get_set_count = function (set)
     end
     return counter
 end
+utils.get_character_class = function (local_player)
+    if not local_player then
+        local_player = get_local_player();
+    end
+    if not local_player then return end
+    local class_id = local_player:get_character_class_id()
+    local character_classes = {
+        [0] = 'sorcerer',
+        [1] = 'barbarian',
+        [3] = 'rogue',
+        [5] = 'druid',
+        [6] = 'necromancer',
+        [7] = 'spiritborn',
+        [8] = 'default', -- new class in expansion, dont know name yet
+        [9] = 'paladin'
+    }
+    if character_classes[class_id] then
+        return character_classes[class_id]
+    else
+        return 'default'
+    end
+end
 return utils
