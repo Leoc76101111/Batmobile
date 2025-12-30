@@ -256,8 +256,6 @@ local get_unstuck_node = function ()
     --     end
     -- end
 
-    local messages = {}
-    local msg = ''
     if cur_node ~= nil then
         -- console.print('pattern all')
         local x = cur_node:x()
@@ -284,49 +282,26 @@ local get_unstuck_node = function ()
             test_node_str = vec_to_string(test_node)
             valid = utility.set_height_of_valid_position(test_node)
             walkable = utility.is_point_walkeable(valid)
-            messages[#messages+1] = test_node_str .. '=' .. tostring(navigator.unstuck_nodes[test_node_str])
             if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-                for _, parts in ipairs(messages) do
-                    msg = msg .. parts ..','
-                end
-                console.print(msg)
                 return valid, test_node_str
             end
         end
     end
-    for _, parts in ipairs(messages) do
-        msg = msg .. parts ..','
-    end
-    console.print(msg)
     return nil, nil
 end
 local unstuck = function (local_player)
-    console.print('stuck')
-    console.print('current time ' .. get_time_since_inject())
-    console.print('update_time ' .. navigator.last_update)
     local cur_node = normalize_node(local_player:get_position())
-    console.print(vec_to_string(cur_node))
-    console.print(vec_to_string(navigator.target))
-    if navigator.path[1] ~= nil then
-        console.print(vec_to_string(navigator.path[1]))
-    else
-        console.print('nil')
-    end
     local unstuck_node, unstuck_node_str = get_unstuck_node()
     if unstuck_node ~= nil and unstuck_node_str ~= nil then
-        console.print('node')
-        console.print(vec_to_string(unstuck_node))
         -- try evade if not add to path
         if local_player:is_spell_ready(337031) and
             navigator.unstuck_nodes[unstuck_node_str] == nil
         then
             console.print('unstuck by evading')
             navigator.unstuck_nodes[unstuck_node_str] = 'evaded'
-            local success = cast_spell.position(337031, unstuck_node, 0)
-            console.print(tostring(success))
+            cast_spell.position(337031, unstuck_node, 0)
             return
         elseif navigator.unstuck_nodes[unstuck_node_str] == 'evaded' then
-            console.print('unstuck by injecting path')
             navigator.unstuck_nodes[unstuck_node_str] = 'injected'
             table.insert(navigator.path, 1, unstuck_node)
             return
