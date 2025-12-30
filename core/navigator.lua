@@ -438,7 +438,11 @@ navigator.move = function ()
         end
         if movement_spell_id ~= nil and raycast_success then
             local success = cast_spell.position(movement_spell_id, navigator.target, 0)
-            if success then navigator.update() end
+            if success then 
+                navigator.update()
+                player_pos = local_player:get_position()
+                cur_node = utils.normalize_node(player_pos)
+            end
         end
     end
 
