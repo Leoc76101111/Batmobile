@@ -16,6 +16,7 @@ local navigator = {
     trav_delay = nil,
     done_delay = nil,
     movement_step = 4,
+    movement_dist = math.sqrt(4*4*2), -- diagonal dist
     is_custom_target = false,
     unstuck_nodes = {},
     blacklisted_trav = {},
@@ -520,7 +521,7 @@ navigator.move = function ()
     end
 
     if navigator.target ~= nil and (#navigator.path == 0 or
-        utils.distance(navigator.path[1],navigator.last_pos) > navigator.movement_step)
+        utils.distance(navigator.path[1],navigator.last_pos) > navigator.movement_dist)
     then
         local result = path_finder.find_path(navigator.last_pos, navigator.target)
         if #result == 0 then
