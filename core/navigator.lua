@@ -519,8 +519,8 @@ navigator.move = function ()
         navigator.done_delay = nil
     end
 
-    if navigator.target ~= nil and
-        (#navigator.path == 0 or utils.distance(navigator.path[1],navigator.last_pos) >= 2)
+    if navigator.target ~= nil and (#navigator.path == 0 or
+        utils.distance(navigator.path[1],navigator.last_pos) > navigator.movement_step)
     then
         local result = path_finder.find_path(navigator.last_pos, navigator.target)
         if #result == 0 then

@@ -10,12 +10,13 @@ local explorer_dfs = {
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
+    frontie_max_dist = 10,
     cur_pos = nil,
     prev_pos = nil,
     backtrack = {},
     last_dir = nil,
-    radius = 10,
-    frontier_radius = 11,
+    radius = 8,
+    frontier_radius = 10,
     backtracking = false,
     backtrack_node = nil,
     backtrack_failed_time = -1
@@ -254,7 +255,7 @@ explorer_dfs.select_node = function (local_player, failed)
                 remove_frontier(most_recent_str)
             else
                 local frontier_node =  utils.string_to_vec(most_recent_str)
-                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= 20 then
+                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontie_max_dist then
                     remove_frontier(most_recent_str)
                     return frontier_node
                 end
