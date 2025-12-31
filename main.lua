@@ -40,7 +40,7 @@ local function main_pulse()
         -- BatmobilePlugin.set_target(plugin_label, goal)
         local start_move = os.clock()
         navigator.move()
-        tracker.timer_update = os.clock() - start_move
+        tracker.timer_move = os.clock() - start_move
     end
     -- local start_update = os.clock()
     -- navigator.update()

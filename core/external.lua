@@ -33,12 +33,14 @@ external.move = function (caller)
     -- console.print('move called by ' .. caller)
     local start_move = os.clock()
     navigator.move()
-    tracker.timer_update = os.clock() - start_move
+    tracker.timer_move = os.clock() - start_move
 end
 external.update = function (caller)
     tracker.external_caller = caller
     -- console.print('update called by ' .. caller)
+    local start_update = os.clock()
     navigator.update()
+    tracker.timer_update = os.clock() - start_update
 end
 external.set_target = function(caller, target)
     tracker.external_caller = caller

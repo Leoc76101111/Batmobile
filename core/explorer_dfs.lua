@@ -10,7 +10,7 @@ local explorer_dfs = {
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
-    frontie_max_dist = 10,
+    frontie_max_dist = 12,
     cur_pos = nil,
     prev_pos = nil,
     backtrack = {},
@@ -154,16 +154,14 @@ explorer_dfs.update = function (local_player)
         for j = f_min_y, f_max_y, step do
             local norm_x = utils.normalize_value(i)
             local norm_y = utils.normalize_value(j)
-            local node =  vec3:new(norm_x, norm_y, 0)
+            local node = vec3:new(norm_x, norm_y, 0)
             local node_str = utils.vec_to_string(node)
 
             if explorer_dfs.visited[node_str] == nil then
                 if i >= v_min_x and i <= v_max_x and j >= v_min_y and j <= v_max_y then
                     add_visited(node_str)
                     remove_retry(node_str)
-                    if explorer_dfs.frontier[node_str] ~= nil then
-                        remove_frontier(node_str)
-                    end
+                    remove_frontier(node_str)
                 elseif explorer_dfs.frontier[node_str] == nil and
                     (explorer_dfs.visited[node_str] == nil or
                     explorer_dfs.retry[node_str] ~= nil)
@@ -254,7 +252,7 @@ explorer_dfs.select_node = function (local_player, failed)
             if explorer_dfs.visited[most_recent_str] ~= nil then
                 remove_frontier(most_recent_str)
             else
-                local frontier_node =  utils.string_to_vec(most_recent_str)
+                local frontier_node = utils.string_to_vec(most_recent_str)
                 if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontie_max_dist then
                     remove_frontier(most_recent_str)
                     return frontier_node
