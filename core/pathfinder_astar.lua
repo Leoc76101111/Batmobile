@@ -21,24 +21,14 @@ local heuristic = function (a, b)
     local dy = math.abs(a:y() - b:y())
     return math.max(dx, dy) + (math.sqrt(2) - 1) * math.min(dx, dy)
 end
-local reconstruct_path = function (prev_nodes, cur_node)
-    local cur_walkable_node = utility.set_height_of_valid_position(cur_node)
-    -- local rev_path = {cur_walkable_node}
-    local path = {cur_walkable_node}
+local reconstruct_path = function (closed_set, prev_nodes, cur_node)
+    local path = {cur_node}
     local cur_str = utils.vec_to_string(cur_node)
     while prev_nodes[cur_str] ~= nil do
         cur_str = prev_nodes[cur_str]
-        cur_node = utils.normalize_node(utils.string_to_vec(cur_str))
-        cur_walkable_node = utility.set_height_of_valid_position(cur_node)
-        -- rev_path[#rev_path+1] = cur_walkable_node
-        table.insert(path, 1, cur_walkable_node)
+        cur_node = closed_set[cur_str]
+        table.insert(path, 1, cur_node)
     end
-    -- local index = #rev_path
-    -- path = {}
-    -- for _, node in ipairs(rev_path) do
-    --     path[index] = node
-    --     index = index - 1
-    -- end
     return path
 end
 local get_neighbors = function (node, goal)
@@ -59,11 +49,17 @@ local get_neighbors = function (node, goal)
         local dy = direction[2]
         local newx = node:x() + dx
         local newy = node:y() + dy
-        local neigh_node = vec3:new(newx, newy, 0)
+        local neigh_node = vec3:new(newx, newy, node:z())
+        local neigh_node_alt = vec3:new(newx, newy, goal:z())
         local valid = utility.set_height_of_valid_position(neigh_node)
         local walkable = utility.is_point_walkeable(valid)
-        if walkable or (newx == goal:x() and newy == goal:y()) then
+        local walkable_alt = utility.is_point_walkeable(neigh_node_alt)
+        if walkable then
             neighbors[#neighbors+1] = neigh_node
+        elseif (newx == goal:x() and newy == goal:y()) then
+            neighbors[#neighbors+1] = goal
+        elseif walkable_alt then
+            neighbors[#neighbors+1] = neigh_node_alt
         end
     end
     return neighbors
@@ -91,7 +87,7 @@ pathfinder_astar.find_path = function (start, goal)
         local cur_str, cur_node = get_lowest_f_score(open_set, f_score)
         if utils.distance(cur_node, goal_node) == 0 then
             -- console.print('path found')
-            return reconstruct_path(prev_nodes, cur_node)
+            return reconstruct_path(closed_set, prev_nodes, cur_node)
         end
         open_set[cur_str] = nil
         closed_set[cur_str] = cur_node

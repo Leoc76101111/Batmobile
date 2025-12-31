@@ -22,23 +22,37 @@ drawing.draw_nodes = function (local_player)
     local backtrack = explorer_dfs.backtrack
     local retry_count = explorer_dfs.retry_count
 
-    local cur_pos = navigator.last_pos
-    local valid_cur_pos = utility.set_height_of_valid_position(local_player:get_position())
+    local player_pos = local_player:get_position()
+    local valid_z = player_pos:z()
+    local cur_node = utils.normalize_node(player_pos)
 
-    if cur_pos ~= nil then
+    if cur_node ~= nil then
         local path = navigator.path
         local prev_node = nil
         local counter = 0
 
+        -- for node_str,_ in pairs(explorer_dfs.frontier) do
+        --     local node = utils.string_to_vec(node_str)
+        --     local valid = vec3:new(node:x(), node:y(), valid_z)
+        --     graphics.circle_3d(valid, 0.05, color_blue(255))
+        -- end
+        -- local perimeter = explorer_dfs.get_perimeter(cur_node)
+        -- for _, node in pairs(perimeter) do
+        --     local valid = vec3:new(node:x(), node:y(), valid_z)
+        --     -- valid = utility.set_height_of_valid_position(node)
+        --     if utils.distance(cur_node, node) <= max_dist then
+        --         graphics.circle_3d(valid, 0.05, color_blue(255))
+        --     end
+        -- end
         for index = #backtrack, 1, -1 do
             if counter < 30 then
                 local node = backtrack[index]
-                local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
+                local valid = vec3:new(node:x(), node:y(), valid_z)
                 graphics.circle_3d(valid, 0.05, color_yellow(255))
                 if prev_node ~= nil then
                     graphics.line(valid, prev_node, color_yellow(255), 1)
                 else
-                    graphics.line(valid_cur_pos, valid, color_yellow(255), 1)
+                    graphics.line(player_pos, valid, color_yellow(255), 1)
                 end
                 prev_node = valid
                 counter = counter + 1
@@ -48,13 +62,13 @@ drawing.draw_nodes = function (local_player)
         end
         prev_node = nil
         for _, node in pairs(path) do
-            local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-            if utils.distance(cur_pos, node) <= max_dist then
+            local valid = vec3:new(node:x(), node:y(), valid_z)
+            if utils.distance(cur_node, node) <= max_dist then
                 graphics.circle_3d(valid, 0.05, color_red(255))
                 if prev_node ~= nil then
                     graphics.line(valid, prev_node, color_red(255), 1)
                 else
-                    graphics.line(valid_cur_pos, valid, color_red(255), 1)
+                    graphics.line(player_pos, valid, color_red(255), 1)
                 end
                 prev_node = valid
             end
@@ -64,17 +78,17 @@ drawing.draw_nodes = function (local_player)
     if tracker.debug_pos ~= nil then
         local valid = utility.set_height_of_valid_position(tracker.debug_pos)
         graphics.circle_3d(valid, 5, color_white(255))
-        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+        graphics.line(player_pos, valid, color_white(255), 1)
     end
     if tracker.debug_node ~= nil then
-        local valid = vec3:new(tracker.debug_node:x(),tracker.debug_node:y(), valid_cur_pos:z())
+        local valid = vec3:new(tracker.debug_node:x(),tracker.debug_node:y(), valid_z)
         graphics.circle_3d(valid, 5, color_white(255))
-        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+        graphics.line(player_pos, valid, color_white(255), 1)
     end
     if tracker.debug_actor ~= nil then
         local valid = tracker.debug_actor:get_position()
         graphics.circle_3d(valid, 5, color_white(255))
-        graphics.line(valid_cur_pos, valid, color_white(255), 1)
+        graphics.line(player_pos, valid, color_white(255), 1)
     end
 
     local in_combat =  utils.in_combat(local_player)

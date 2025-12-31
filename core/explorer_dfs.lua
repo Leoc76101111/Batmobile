@@ -7,6 +7,7 @@ local explorer_dfs = {
     retry = {},
     retry_count = 0,
     frontier = {},
+    frontier_node = {},
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
@@ -21,8 +22,9 @@ local explorer_dfs = {
     backtrack_node = nil,
     backtrack_failed_time = -1
 }
-local add_frontier = function (node_str)
+local add_frontier = function (node_str, node)
     explorer_dfs.frontier[node_str] = explorer_dfs.frontier_index
+    explorer_dfs.frontier_node[node_str] = node
     explorer_dfs.frontier_order[explorer_dfs.frontier_index] = node_str
     explorer_dfs.frontier_index = explorer_dfs.frontier_index + 1
     explorer_dfs.frontier_count = explorer_dfs.frontier_count + 1
@@ -32,6 +34,7 @@ local remove_frontier = function (node_str)
     if index ~= nil then
         explorer_dfs.frontier_order[index] = nil
         explorer_dfs.frontier[node_str] = nil
+        explorer_dfs.frontier_node[node_str] = nil
         explorer_dfs.frontier_count = explorer_dfs.frontier_count - 1
     end
 end
@@ -57,12 +60,10 @@ local remove_retry = function (node_str)
 end
 local get_perimeter = function (node)
     local perimeter = {}
-
-    local cur_pos = explorer_dfs.cur_pos
     local radius = explorer_dfs.radius
     local step = settings.step
-    local x = cur_pos:x()
-    local y = cur_pos:y()
+    local x = node:x()
+    local y = node:y()
     local min_x = x - radius
     local max_x = x + radius
     local min_y = y - radius
@@ -74,13 +75,13 @@ local get_perimeter = function (node)
             then
                 local norm_x = utils.normalize_value(i)
                 local norm_y = utils.normalize_value(j)
-                local new_node =  vec3:new(norm_x, norm_y, 0)
+                local new_node =  vec3:new(norm_x, norm_y, node:z())
                 local new_node_str = utils.vec_to_string(new_node)
                 if explorer_dfs.visited[new_node_str] == nil then
                     local valid = utility.set_height_of_valid_position(new_node)
                     local walkable = utility.is_point_walkeable(valid)
                     if walkable then
-                        perimeter[#perimeter+1] = new_node
+                        perimeter[#perimeter+1] = valid
                     end
                 end
             end
@@ -88,12 +89,7 @@ local get_perimeter = function (node)
     end
     return perimeter
 end
-explorer_dfs.get_perimeter = function (local_player)
-    if explorer_dfs.cur_pos == nil then
-        explorer_dfs.set_current_pos(local_player)
-    end
-    return get_perimeter(explorer_dfs.cur_pos)
-end
+explorer_dfs.get_perimeter = get_perimeter
 explorer_dfs.reset = function ()
     explorer_dfs.visited = {}
     explorer_dfs.visited_count = 0
@@ -154,7 +150,7 @@ explorer_dfs.update = function (local_player)
         for j = f_min_y, f_max_y, step do
             local norm_x = utils.normalize_value(i)
             local norm_y = utils.normalize_value(j)
-            local node = vec3:new(norm_x, norm_y, 0)
+            local node = vec3:new(norm_x, norm_y, cur_pos:z())
             local node_str = utils.vec_to_string(node)
 
             if explorer_dfs.visited[node_str] == nil then
@@ -171,7 +167,7 @@ explorer_dfs.update = function (local_player)
                     local valid = utility.set_height_of_valid_position(node)
                     local walkable = utility.is_point_walkeable(valid)
                     if walkable then
-                        add_frontier(node_str)
+                        add_frontier(node_str, valid)
                     end
                 end
             end
@@ -252,7 +248,7 @@ explorer_dfs.select_node = function (local_player, failed)
             if explorer_dfs.visited[most_recent_str] ~= nil then
                 remove_frontier(most_recent_str)
             else
-                local frontier_node = utils.string_to_vec(most_recent_str)
+                local frontier_node = explorer_dfs.frontier_node[most_recent_str]
                 if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontie_max_dist then
                     remove_frontier(most_recent_str)
                     return frontier_node

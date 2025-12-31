@@ -55,7 +55,7 @@ local get_closeby_node = function (trav_node, max_dist)
     local nodes = {}
     for i = norm_trav:x()-max_dist, norm_trav:x()+max_dist, step do
         for j = norm_trav:y()-max_dist, norm_trav:y()+max_dist, step do
-            local new_node =  vec3:new(i, j, 0)
+            local new_node =  vec3:new(i, j, cur_node:z())
             local valid = utility.set_height_of_valid_position(new_node)
             local walkable = utility.is_point_walkeable(valid)
             local diff_z = utils.distance_z(trav_node, valid)
@@ -77,43 +77,43 @@ local get_movement_spell_id = function(local_player)
     if not settings.use_movement then return end
     local class = utils.get_character_class(local_player)
     if class == 'sorcerer' then
-        if settings.use_teleport and utility.is_spell_ready(288106) then
+        if settings.use_teleport and utility.can_cast_spell(288106) then
             return 288106, false
         end
-        if settings.use_teleport_enchanted and utility.is_spell_ready(959728) then
+        if settings.use_teleport_enchanted and utility.can_cast_spell(959728) then
             return 959728, false
         end
     elseif class == 'spiritborn' then
-        if settings.use_soar and utility.is_spell_ready(1871821) then
+        if settings.use_soar and utility.can_cast_spell(1871821) then
             return 1871821, false
         end
-        if settings.use_rushing_claw and utility.is_spell_ready(1871761) then
+        if settings.use_rushing_claw and utility.can_cast_spell(1871761) then
             return 1871761, false
         end
-        if settings.use_hunter and utility.is_spell_ready(1663206) then
+        if settings.use_hunter and utility.can_cast_spell(1663206) then
             return 1663206, false
         end
     elseif class == 'rogue' then
-        if settings.use_dash and utility.is_spell_ready(358761) then
+        if settings.use_dash and utility.can_cast_spell(358761) then
             return 358761, false
         end
     elseif class == 'barbarian' then
-        if settings.use_leap and utility.is_spell_ready(196545) then
+        if settings.use_leap and utility.can_cast_spell(196545) then
             return 196545, false
         end
-        if settings.use_charge and utility.is_spell_ready(204662) then
+        if settings.use_charge and utility.can_cast_spell(204662) then
             return 204662, true
         end
     elseif class == 'paladin' then
-        if settings.use_falling_star and utility.is_spell_ready(2106904) then
+        if settings.use_falling_star and utility.can_cast_spell(2106904) then
             return 2106904, true
         end
-        if settings.use_aoj and utility.is_spell_ready(2297125) then
+        if settings.use_aoj and utility.can_cast_spell(2297125) then
             return 2297125, true
         end
     end
     -- class == 'default' or class == 'druid' or class == 'necromancer'
-    if settings.use_evade and utility.is_spell_ready(337031) then
+    if settings.use_evade and utility.can_cast_spell(337031) then
         return 337031, false
     end
     return nil, false
@@ -180,110 +180,9 @@ end
 local get_unstuck_node = function ()
     -- get a node that is perpendicular to the first node in path from current node
     -- i.e. turn 90 degress left or right 
-    local unstuck_node = nil
     local cur_node = navigator.last_pos
     local step = navigator.movement_step
     local test_node, test_node_str, valid, walkable
-
-    
-    -- -- to be worked on later
-    -- local path_node = nil
-    -- for _, node in ipairs(navigator.path) do
-    --     if utils.distance(node, cur_node) >= 1 then
-    --         if path_node == nil and
-    --             -- move to nodes that is >= movement step 
-    --             (utils.distance(node, cur_node) >= navigator.movement_step or
-    --             -- or if it is close to target
-    --             utils.distance(node, navigator.target) == 0)
-    --         then
-    --             path_node = node
-    --         end
-    --     end
-    -- end
-
-    -- if path_node ~= nil and cur_node ~= nil then
-    --     if cur_node:x() == path_node:x() then
-    --         console.print('pattern 1')
-    --         test_node = vec3:new(cur_node:x() + step, cur_node:y(), 0)
-    --         test_node_str = utils.vec_to_string(test_node)
-    --         valid = utility.set_height_of_valid_position(test_node)
-    --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         else
-    --             test_node = vec3:new(cur_node:x() - step, cur_node:y(), 0)
-    --             test_node_str = utils.vec_to_string(test_node)
-    --             valid = utility.set_height_of_valid_position(test_node)
-    --             walkable = utility.is_point_walkeable(valid)
-    --         end
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         end
-    --     elseif cur_node:y() == path_node:y() then
-    --         console.print('pattern 2')
-    --         test_node = vec3:new(cur_node:x(), cur_node:y() + step, 0)
-    --         test_node_str = utils.vec_to_string(test_node)
-    --         valid = utility.set_height_of_valid_position(test_node)
-    --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         else
-    --             test_node = vec3:new(cur_node:x(), cur_node:y() - step, 0)
-    --             test_node_str = utils.vec_to_string(test_node)
-    --             valid = utility.set_height_of_valid_position(test_node)
-    --             walkable = utility.is_point_walkeable(valid)
-    --         end
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         end
-    --     elseif (cur_node:x() > path_node:x() and cur_node:y() > path_node:y()) or
-    --         (cur_node:x() < path_node:x() and cur_node:y() < path_node:y())
-    --     then
-    --         console.print('pattern 3')
-    --         test_node = vec3:new(cur_node:x() - step, cur_node:y() + step, 0)
-    --         test_node_str = utils.vec_to_string(test_node)
-    --         valid = utility.set_height_of_valid_position(test_node)
-    --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         else
-    --             test_node = vec3:new(cur_node:x() + step, cur_node:y() - step, 0)
-    --             test_node_str = utils.vec_to_string(test_node)
-    --             valid = utility.set_height_of_valid_position(test_node)
-    --             walkable = utility.is_point_walkeable(valid)
-    --         end
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         end
-    --     elseif (cur_node:x() < path_node:x() and cur_node:y() > path_node:y()) or
-    --         (cur_node:x() > path_node:x() and cur_node:y() < path_node:y())
-    --     then
-    --         console.print('pattern 4')
-    --         test_node = vec3:new(cur_node:x() + step, cur_node:y() + step, 0)
-    --         test_node_str = utils.vec_to_string(test_node)
-    --         valid = utility.set_height_of_valid_position(test_node)
-    --         walkable = utility.is_point_walkeable(valid)
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         else
-    --             test_node = vec3:new(cur_node:x() - step, cur_node:y() - step, 0)
-    --             test_node_str = utils.vec_to_string(test_node)
-    --             valid = utility.set_height_of_valid_position(test_node)
-    --             walkable = utility.is_point_walkeable(valid)
-    --         end
-    --         if walkable and navigator.unstuck_nodes[test_node_str] ~= 'injected' then
-    --             navigator.unstuck_nodes[test_node_str] = test_node_str
-    --             return valid, test_node_str
-    --         end
-    --     end
-    -- end
 
     if cur_node ~= nil then
         -- console.print('pattern all')
@@ -307,7 +206,7 @@ local get_unstuck_node = function ()
             local dy = direction[2]
             local new_x = x + dx
             local new_y = y + dy
-            test_node = vec3:new(new_x, new_y, 0)
+            test_node = vec3:new(new_x, new_y, cur_node:z())
             test_node_str = utils.vec_to_string(test_node)
             valid = utility.set_height_of_valid_position(test_node)
             walkable = utility.is_point_walkeable(valid)
@@ -322,14 +221,14 @@ local unstuck = function (local_player)
     local unstuck_node, unstuck_node_str = get_unstuck_node()
     if unstuck_node ~= nil and unstuck_node_str ~= nil then
         -- try evade if not add to path
-        if utility.is_spell_ready(337031) and
+        if utility.can_cast_spell(337031) and
             navigator.unstuck_nodes[unstuck_node_str] == nil
         then
             console.print('unstuck by evading')
             navigator.unstuck_nodes[unstuck_node_str] = 'evaded'
             cast_spell.position(337031, unstuck_node, 0)
             return
-        elseif utility.is_spell_ready(959728) and
+        elseif utility.can_cast_spell(959728) and
             (navigator.unstuck_nodes[unstuck_node_str] == nil or
             navigator.unstuck_nodes[unstuck_node_str] == 'evaded')
         then

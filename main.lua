@@ -28,6 +28,17 @@ local function main_pulse()
     end
     settings:update_settings()
     if not local_player then return end
+
+    -- local min = vec3:new(player_position:x(), player_position:y(), player_position:z()-1)
+    -- local max = vec3:new(player_position:x(), player_position:y(), player_position:z()+2)
+    -- console.print('a')
+    -- console.print(player_position:z())
+    -- console.print(tostring(utility.is_point_walkeable(player_position)))
+    -- console.print(tostring(utility.is_point_walkeable(min)))
+    -- console.print(tostring(utility.is_point_walkeable(max)))
+
+
+
     if (not settings.enabled or not settings.get_keybind_state()) then return end
 
     if local_player:is_dead() then

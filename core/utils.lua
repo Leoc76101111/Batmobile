@@ -58,7 +58,7 @@ end
 utils.normalize_node = function (node)
     local norm_x = utils.normalize_value(node:x())
     local norm_y = utils.normalize_value(node:y())
-    return vec3:new(norm_x, norm_y, 0)
+    return vec3:new(norm_x, norm_y, node:z())
 end
 utils.vec_to_string = function (node)
     return tostring(node:x()) .. ',' .. tostring(node:y())
