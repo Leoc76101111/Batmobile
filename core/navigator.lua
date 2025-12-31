@@ -19,6 +19,10 @@ local navigator = {
     is_custom_target = false,
     unstuck_nodes = {},
     blacklisted_trav = {},
+    move_time = -1,
+    move_timeout = 0.05,
+    update_time = -1,
+    update_timeout = 0.05,
 }
 local get_nearby_travs = function (local_player)
     local traversals = {}
@@ -355,10 +359,11 @@ navigator.unpause = function ()
     tracker.paused = false
 end
 navigator.update = function ()
+    if navigator.update_time + navigator.update_timeout > get_time_since_inject() then return end
+    navigator.update_time = get_time_since_inject()
     local local_player = get_local_player()
     if not local_player then return end
-    local traversals = get_nearby_travs(local_player)
-    if #traversals > 0 and has_traversal_buff(local_player) then return end
+    if has_traversal_buff(local_player) then return end
     explorer_dfs.update(local_player)
 end
 navigator.reset = function ()
@@ -386,6 +391,7 @@ navigator.set_target = function (target)
         navigator.target = new_target
         navigator.path = {}
     end
+    explorer_dfs.backtracking = false
 end
 navigator.clear_target = function ()
     navigator.target = nil
@@ -412,6 +418,8 @@ navigator.set_goal = function (goal)
     end
 end
 navigator.move = function ()
+    if navigator.move_time + navigator.move_timeout > get_time_since_inject() then return end
+    navigator.move_time = get_time_since_inject()
     local local_player = get_local_player()
     if not local_player then return end
     local player_pos = local_player:get_position()
@@ -428,11 +436,11 @@ navigator.move = function ()
                 -- jump doesnt have traversal buff for some reason
                 navigator.target = nil
                 navigator.last_trav = nil
-                navigator.trav_delay = get_time_since_inject() + 2
+                navigator.trav_delay = get_time_since_inject() + 4
             end
         end
         if has_traversal_buff(local_player) then
-            navigator.trav_delay = get_time_since_inject() + 2
+            navigator.trav_delay = get_time_since_inject() + 4
             navigator.target = nil
             navigator.last_trav = nil
         end
@@ -495,7 +503,7 @@ navigator.move = function ()
         not has_traversal_buff(local_player)
     then
         if navigator.done_delay ~= nil and navigator.done_delay < get_time_since_inject() then
-            if utils.get_set_count(explorer_dfs.frontier_order) > 0 and #explorer_dfs.backtrack == 0 then
+            if explorer_dfs.frontier_count > 0 and #explorer_dfs.backtrack == 0 then
                 console.print('not done but no more backtrack, reseting')
                 navigator.reset()
                 return

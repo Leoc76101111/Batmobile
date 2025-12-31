@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '0.0.8'
+local plugin_version = '0.0.9'
 
 local get_character_class = function (local_player)
     if not local_player then

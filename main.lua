@@ -33,15 +33,14 @@ local function main_pulse()
     if local_player:is_dead() then
         revive_at_checkpoint()
     elseif not tracker.paused and not utils.player_loading() then
-        -- local start_update = os.clock()
-        -- navigator.update()
-        -- tracker.timer_update = os.clock() - start_update
-        -- -- local goal = vec3:new(-2058.5,-1081,32.373046875)
-        -- -- BatmobilePlugin.set_target(plugin_label, goal)
-        -- local start_move = os.clock()
-        -- navigator.move()
-        -- tracker.timer_update = os.clock() - start_move
-        -- collectgarbage("collect")
+        local start_update = os.clock()
+        navigator.update()
+        tracker.timer_update = os.clock() - start_update
+        -- local goal = vec3:new(-2058.5,-1081,32.373046875)
+        -- BatmobilePlugin.set_target(plugin_label, goal)
+        local start_move = os.clock()
+        navigator.move()
+        tracker.timer_update = os.clock() - start_move
     end
     -- local start_update = os.clock()
     -- navigator.update()
@@ -70,8 +69,8 @@ end
 
 local function render_pulse()
     -- if not (settings.get_keybind_state()) then return end
-    if not local_player or not settings.enabled then return end
-    drawing.draw_nodes()
+    if not local_player or not settings.enabled or settings.draw ~= 1 then return end
+    drawing.draw_nodes(local_player)
 end
 
 on_update(function()

@@ -3,10 +3,13 @@ local settings = require 'core.settings'
 
 local explorer_dfs = {
     visited = {},
+    visited_count = 0,
     retry = {},
+    retry_count = 0,
     frontier = {},
     frontier_order = {},
     frontier_index = 0,
+    frontier_count = 0,
     cur_pos = nil,
     prev_pos = nil,
     backtrack = {},
@@ -21,11 +24,35 @@ local add_frontier = function (node_str)
     explorer_dfs.frontier[node_str] = explorer_dfs.frontier_index
     explorer_dfs.frontier_order[explorer_dfs.frontier_index] = node_str
     explorer_dfs.frontier_index = explorer_dfs.frontier_index + 1
+    explorer_dfs.frontier_count = explorer_dfs.frontier_count + 1
 end
 local remove_frontier = function (node_str)
     local index = explorer_dfs.frontier[node_str]
-    explorer_dfs.frontier_order[index] = nil
-    explorer_dfs.frontier[node_str] = nil
+    if index ~= nil then
+        explorer_dfs.frontier_order[index] = nil
+        explorer_dfs.frontier[node_str] = nil
+        explorer_dfs.frontier_count = explorer_dfs.frontier_count - 1
+    end
+end
+local add_visited = function (node_str)
+    explorer_dfs.visited[node_str] = node_str
+    explorer_dfs.visited_count = explorer_dfs.visited_count + 1
+end
+local remove_visited = function (node_str)
+    if explorer_dfs.visited[node_str] ~= nil then
+        explorer_dfs.visited[node_str] = nil
+        explorer_dfs.visited_count = explorer_dfs.visited_count - 1
+    end
+end
+local add_retry = function (node_str)
+    explorer_dfs.retry[node_str] = node_str
+    explorer_dfs.retry_count = explorer_dfs.retry_count + 1
+end
+local remove_retry = function (node_str)
+    if explorer_dfs.retry[node_str] ~= nil then
+        explorer_dfs.retry[node_str] = nil
+        explorer_dfs.retry_count = explorer_dfs.retry_count - 1
+    end
 end
 local get_perimeter = function (node)
     local perimeter = {}
@@ -68,14 +95,18 @@ explorer_dfs.get_perimeter = function (local_player)
 end
 explorer_dfs.reset = function ()
     explorer_dfs.visited = {}
+    explorer_dfs.visited_count = 0
     explorer_dfs.frontier = {}
     explorer_dfs.frontier_order = {}
+    explorer_dfs.frontier_index = 0
+    explorer_dfs.frontier_count = 0
+    explorer_dfs.retry = {}
+    explorer_dfs.retry_count = 0
     explorer_dfs.cur_pos = nil
     explorer_dfs.prev_pos = nil
     explorer_dfs.backtrack = {}
     explorer_dfs.last_dir = nil
     explorer_dfs.backtracking = false
-    explorer_dfs.frontier_index = 0
 end
 explorer_dfs.set_current_pos = function (local_player)
     explorer_dfs.prev_pos = explorer_dfs.cur_pos
@@ -127,8 +158,8 @@ explorer_dfs.update = function (local_player)
 
             if explorer_dfs.visited[node_str] == nil then
                 if i >= v_min_x and i <= v_max_x and j >= v_min_y and j <= v_max_y then
-                    explorer_dfs.visited[node_str] = node_str
-                    explorer_dfs.retry[node_str] = nil
+                    add_visited(node_str)
+                    remove_retry(node_str)
                     if explorer_dfs.frontier[node_str] ~= nil then
                         remove_frontier(node_str)
                     end
@@ -136,8 +167,8 @@ explorer_dfs.update = function (local_player)
                     (explorer_dfs.visited[node_str] == nil or
                     explorer_dfs.retry[node_str] ~= nil)
                 then
-                    explorer_dfs.retry[node_str] = nil
-                    explorer_dfs.visited[node_str] = nil
+                    remove_visited(node_str)
+                    remove_retry(node_str)
                     local valid = utility.set_height_of_valid_position(node)
                     local walkable = utility.is_point_walkeable(valid)
                     if walkable then
@@ -165,8 +196,8 @@ explorer_dfs.select_node = function (local_player, failed)
         end
         failed = utils.normalize_node(failed)
         local failed_str = utils.vec_to_string(failed)
-        explorer_dfs.visited[failed_str] = failed_str
-        explorer_dfs.retry[failed_str] = failed_str
+        add_visited(failed_str)
+        add_retry(failed_str)
     end
     -- get all perimeter (unvisited) of current position
     local perimeter = get_perimeter(explorer_dfs.cur_pos)

@@ -13,54 +13,27 @@ local get_max_length = function(messages)
 end
 local drawing = {}
 
-drawing.draw_nodes = function ()
-    local local_player = get_local_player()
-    if local_player == nil then return end
-    if settings.draw ~= 1 then return end
+drawing.draw_nodes = function (local_player)
     local start_draw = os.clock()
     local max_dist = 50
 
-    local visited = explorer_dfs.visited
-    local frontier = explorer_dfs.frontier
+    local visited_count = explorer_dfs.visited_count
+    local frontier_count = explorer_dfs.frontier_count
     local backtrack = explorer_dfs.backtrack
-    local retry = explorer_dfs.retry
+    local retry_count = explorer_dfs.retry_count
 
     local cur_pos = navigator.last_pos
     local valid_cur_pos = utility.set_height_of_valid_position(local_player:get_position())
 
     if cur_pos ~= nil then
-        local perimeter = explorer_dfs.get_perimeter(local_player)
         local path = navigator.path
-
-        -- for _, node in pairs(frontier) do
-        --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-        --     -- valid = utility.set_height_of_valid_position(node)
-        --     if utils.distance(cur_pos, node) <= max_dist then
-        --         graphics.circle_3d(valid, 0.05, color_green(255))
-        --     end
-        -- end
-        -- for _, node in pairs(visited) do
-        --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-        --     -- valid = utility.set_height_of_valid_position(node)
-        --     if utils.distance(cur_pos, node) <= max_dist then
-        --         graphics.circle_3d(valid, 0.05, color_white(255))
-        --     end
-        -- end
-        -- for _, node in pairs(perimeter) do
-        --     local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-        --     -- valid = utility.set_height_of_valid_position(node)
-        --     if utils.distance(cur_pos, node) <= max_dist then
-        --         graphics.circle_3d(valid, 0.05, color_blue(255))
-        --     end
-        -- end
         local prev_node = nil
         local counter = 0
 
         for index = #backtrack, 1, -1 do
-            if counter < 50 then
+            if counter < 30 then
                 local node = backtrack[index]
                 local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-                -- valid = utility.set_height_of_valid_position(node)
                 graphics.circle_3d(valid, 0.05, color_yellow(255))
                 if prev_node ~= nil then
                     graphics.line(valid, prev_node, color_yellow(255), 1)
@@ -69,12 +42,13 @@ drawing.draw_nodes = function ()
                 end
                 prev_node = valid
                 counter = counter + 1
+            else
+                break
             end
         end
         prev_node = nil
         for _, node in pairs(path) do
             local valid = vec3:new(node:x(), node:y(), valid_cur_pos:z())
-            -- valid = utility.set_height_of_valid_position(node)
             if utils.distance(cur_pos, node) <= max_dist then
                 graphics.circle_3d(valid, 0.05, color_red(255))
                 if prev_node ~= nil then
@@ -103,9 +77,6 @@ drawing.draw_nodes = function ()
         graphics.line(valid_cur_pos, valid, color_white(255), 1)
     end
 
-    local visited_count = utils.get_set_count(visited)
-    local visited_length = #tostring(visited_count)
-    if visited_length < 5 then visited_length = 5 end
     local in_combat =  utils.in_combat(local_player)
     local is_cced = utils.is_cced(local_player)
     local speed = local_player:get_current_speed()
@@ -117,9 +88,9 @@ drawing.draw_nodes = function ()
     local messages_left = {
         ' speed     ' .. speed_str,
         ' visited   ' .. tostring(visited_count),
-        ' frontier  ' .. tostring(utils.get_set_count(frontier)),
+        ' frontier  ' .. tostring(frontier_count),
         ' backtrack ' .. tostring(#backtrack),
-        ' retry     ' .. tostring(utils.get_set_count(retry)),
+        ' retry     ' .. tostring(retry_count),
     }
     local messages_right = {
         ' in_combat ' .. tostring(in_combat),
@@ -144,6 +115,7 @@ drawing.draw_nodes = function ()
     tracker.timer_draw = os.clock() - start_draw
     local msg = ' d_time    ' .. string.format("%.3f",tracker.timer_draw)
     graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
+    -- collectgarbage("collect")
 end
 
 return drawing
