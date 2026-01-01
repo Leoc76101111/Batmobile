@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '0.0.11'
+local plugin_version = '0.0.12'
 
 local get_character_class = function (local_player)
     if not local_player then
@@ -37,7 +37,7 @@ gui.log_levels_enum = {
     INFO = 1,
     DEBUG = 2
 }
-gui.log_level = { 'Disabled', 'Informative', 'Debug'}
+gui.log_level = { 'Disabled', 'Info', 'Debug'}
 
 gui.elements = {
     main_tree = tree_node:new(0),
