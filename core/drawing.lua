@@ -98,19 +98,19 @@ drawing.draw_nodes = function (local_player)
         speed_str = speed_str .. ' '
     end
     local messages_left = {
-        ' speed     ' .. speed_str,
-        ' path      ' .. tostring(#path),
-        ' visited   ' .. tostring(visited_count),
-        ' frontier  ' .. tostring(frontier_count),
-        ' backtrack ' .. tostring(#backtrack),
-        ' retry     ' .. tostring(retry_count),
+        ' Speed     ' .. speed_str,
+        ' Path      ' .. tostring(#path),
+        ' Visited   ' .. tostring(visited_count),
+        ' Frontier  ' .. tostring(frontier_count),
+        ' Backtrack ' .. tostring(#backtrack),
+        ' Retry     ' .. tostring(retry_count),
     }
     local messages_right = {
-        ' movespell ' .. tostring(settings.use_movement),
-        ' in_combat ' .. tostring(in_combat),
-        ' is_cc\'ed  ' .. tostring(is_cced),
-        ' u_time    ' .. string.format("%.3f",tracker.timer_update),
-        ' m_time    ' .. string.format("%.3f",tracker.timer_move),
+        ' Movespell ' .. tostring(settings.use_movement),
+        ' In_combat ' .. tostring(in_combat),
+        ' Is_cc\'ed  ' .. tostring(is_cced),
+        ' U_time    ' .. string.format("%.3f",tracker.timer_update),
+        ' M_time    ' .. string.format("%.3f",tracker.timer_move),
     }
     local max_left = get_max_length(messages_left)
     local max_right = get_max_length(messages_right)
@@ -127,7 +127,7 @@ drawing.draw_nodes = function (local_player)
         y_pos = y_pos + 20
     end
     tracker.timer_draw = os.clock() - start_draw
-    local msg = ' d_time    ' .. string.format("%.3f",tracker.timer_draw)
+    local msg = ' D_time    ' .. string.format("%.3f",tracker.timer_draw)
     graphics.text_2d(msg, vec2:new(x_pos, y_pos), 20, color_white(255))
     -- collectgarbage("collect")
 end

@@ -1,6 +1,7 @@
 local plugin_label = 'batmobile'
 -- kept plugin label instead of waiting for update_tracker to set it
 local navigator = require 'core.navigator'
+local explorer_dfs = require 'core.explorer_dfs'
 local tracker = require 'core.tracker'
 local utils = require 'core.utils'
 
@@ -79,6 +80,15 @@ external.clear_target = function (caller)
     tracker.external_caller = caller
     utils.log(2, 'clear_target called by ' .. tostring(caller))
     navigator.clear_target()
+end
+external.get_backtrack = function(caller)
+    if caller == nil then
+        utils.log(2,'get_backtrack called with no caller')
+        return
+    end
+    tracker.external_caller = caller
+    utils.log(2, 'get_backtrack called by ' .. tostring(caller))
+    return explorer_dfs.backtrack
 end
 
 return external

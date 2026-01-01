@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '0.0.12'
+local plugin_version = '0.0.13'
 console.print("Lua Plugin - Batmobile - Leoric - v" .. plugin_version)
 
 local get_character_class = function (local_player)

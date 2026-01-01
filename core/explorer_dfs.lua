@@ -40,8 +40,10 @@ local remove_frontier = function (node_str)
     end
 end
 local add_visited = function (node_str)
-    explorer_dfs.visited[node_str] = node_str
-    explorer_dfs.visited_count = explorer_dfs.visited_count + 1
+    if explorer_dfs.visited[node_str] == nil then
+        explorer_dfs.visited[node_str] = node_str
+        explorer_dfs.visited_count = explorer_dfs.visited_count + 1
+    end
 end
 local remove_visited = function (node_str)
     if explorer_dfs.visited[node_str] ~= nil then
@@ -50,8 +52,10 @@ local remove_visited = function (node_str)
     end
 end
 local add_retry = function (node_str)
-    explorer_dfs.retry[node_str] = node_str
-    explorer_dfs.retry_count = explorer_dfs.retry_count + 1
+    if explorer_dfs.retry[node_str] == nil then
+        explorer_dfs.retry[node_str] = node_str
+        explorer_dfs.retry_count = explorer_dfs.retry_count + 1
+    end
 end
 local remove_retry = function (node_str)
     if explorer_dfs.retry[node_str] ~= nil then
@@ -156,15 +160,14 @@ explorer_dfs.update = function (local_player)
             local node = vec3:new(norm_x, norm_y, cur_pos:z())
             local node_str = utils.vec_to_string(node)
 
-            if explorer_dfs.visited[node_str] == nil then
+            if explorer_dfs.visited[node_str] == nil or
+                explorer_dfs.retry[node_str] ~= nil
+            then
                 if i >= v_min_x and i <= v_max_x and j >= v_min_y and j <= v_max_y then
                     add_visited(node_str)
                     remove_retry(node_str)
                     remove_frontier(node_str)
-                elseif explorer_dfs.frontier[node_str] == nil and
-                    (explorer_dfs.visited[node_str] == nil or
-                    explorer_dfs.retry[node_str] ~= nil)
-                then
+                elseif explorer_dfs.frontier[node_str] == nil then
                     remove_visited(node_str)
                     remove_retry(node_str)
                     local valid = utility.set_height_of_valid_position(node)
