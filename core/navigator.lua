@@ -113,6 +113,7 @@ local get_movement_spell_id = function(local_player)
         end
     end
     -- class == 'default' or class == 'druid' or class == 'necromancer'
+    -- everyone has evade (hopefully)
     if settings.use_evade and utility.can_cast_spell(337031) then
         return 337031, false
     end
@@ -270,10 +271,12 @@ navigator.reset = function ()
     explorer_dfs.reset()
     navigator.target = nil
     navigator.done = false
+    navigator.done_delay = nil
     navigator.path = {}
     navigator.last_trav = nil
     navigator.trav_delay = nil
     navigator.last_pos = nil
+    navigator.last_update = nil
     navigator.done_delay = nil
     navigator.unstuck_nodes = {}
     navigator.blacklisted_trav = {}
@@ -284,8 +287,7 @@ navigator.set_target = function (target)
     end
     local new_target = utils.normalize_node(target)
     if navigator.target == nil or
-        utils.distance(navigator.target, new_target) > 0 or
-        #navigator.path < 5
+        utils.distance(navigator.target, new_target) > 0
     then
         navigator.is_custom_target = false
         navigator.target = new_target
@@ -372,12 +374,8 @@ navigator.move = function ()
         (navigator.target == nil or utils.distance(cur_node, navigator.target) <= 1)
     then
         if navigator.paused then return end
-        if type(navigator.goal) == 'string' then
-
-        elseif navigator.goal == nil then
-            navigator.target = select_target(nil)
-            navigator.path = {}
-        end
+        navigator.target = select_target(nil)
+        navigator.path = {}
     elseif navigator.target ~= nil and
         navigator.last_update ~= nil and
         navigator.last_update + update_timeout < get_time_since_inject() and
@@ -420,15 +418,14 @@ navigator.move = function ()
     end
 
     if navigator.target ~= nil and (#navigator.path == 0 or
-        utils.distance(navigator.path[1],navigator.last_pos) > navigator.movement_dist)
+        utils.distance(navigator.path[1], navigator.last_pos) > navigator.movement_dist)
     then
         local result = path_finder.find_path(navigator.last_pos, navigator.target)
         if #result == 0 then
             tracker.debug_node = navigator.target
-            if not navigator.paused then
-                navigator.target = select_target(navigator.target)
-                navigator.path = {}
-            end
+            if navigator.paused then return end
+            navigator.target = select_target(navigator.target)
+            navigator.path = {}
             return
         end
         tracker.debug_node = nil

@@ -2,24 +2,25 @@ local utils = require 'core.utils'
 local settings = require 'core.settings'
 
 local explorer_dfs = {
+    cur_pos = nil,
+    prev_pos = nil,
     visited = {},
     visited_count = 0,
+    radius = 8,
     retry = {},
-    retry_count = 0,
     frontier = {},
     frontier_node = {},
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
-    frontie_max_dist = 12,
-    cur_pos = nil,
-    prev_pos = nil,
+    frontier_radius = 10,
+    frontier_max_dist = 14, -- fronter_radius + backtrack_min_dist
+    retry_count = 0,
     backtrack = {},
     last_dir = nil,
-    radius = 8,
-    frontier_radius = 10,
     backtracking = false,
     backtrack_node = nil,
+    backtrack_min_dist = 4,
     backtrack_failed_time = -1
 }
 local add_frontier = function (node_str, node)
@@ -95,6 +96,7 @@ explorer_dfs.reset = function ()
     explorer_dfs.visited_count = 0
     explorer_dfs.frontier = {}
     explorer_dfs.frontier_order = {}
+    explorer_dfs.frontier_node = {}
     explorer_dfs.frontier_index = 0
     explorer_dfs.frontier_count = 0
     explorer_dfs.retry = {}
@@ -102,8 +104,9 @@ explorer_dfs.reset = function ()
     explorer_dfs.cur_pos = nil
     explorer_dfs.prev_pos = nil
     explorer_dfs.backtrack = {}
-    explorer_dfs.last_dir = nil
+    explorer_dfs.backtrack_node = nil
     explorer_dfs.backtracking = false
+    explorer_dfs.last_dir = nil
 end
 explorer_dfs.set_current_pos = function (local_player)
     explorer_dfs.prev_pos = explorer_dfs.cur_pos
@@ -114,7 +117,7 @@ explorer_dfs.set_current_pos = function (local_player)
             local last_pos = explorer_dfs.backtrack[last_index]
 
             local dist = utils.distance(last_pos, explorer_dfs.cur_pos)
-            if dist >= 4 then
+            if dist >= explorer_dfs.backtrack_min_dist then
                 explorer_dfs.backtrack[last_index+1] = explorer_dfs.cur_pos
             end
         else
@@ -249,7 +252,7 @@ explorer_dfs.select_node = function (local_player, failed)
                 remove_frontier(most_recent_str)
             else
                 local frontier_node = explorer_dfs.frontier_node[most_recent_str]
-                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontie_max_dist then
+                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist then
                     remove_frontier(most_recent_str)
                     return frontier_node
                 end

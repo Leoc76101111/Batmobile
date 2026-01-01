@@ -2,85 +2,47 @@ local plugin_label = 'batmobile'
 
 local gui          = require 'gui'
 local settings     = require 'core.settings'
-local utils      = require 'core.utils'
 local external      = require 'core.external'
-local navigator     = require 'core.navigator'
 local drawing      = require 'core.drawing'
-local tracker      = require 'core.tracker'
+local navigator     = require 'core.navigator'
 
-local local_player, player_position
+local local_player
 local debounce_time = nil
-local debounce_timeout = 0
+local debounce_timeout = 1
+local draw_keybind_data = checkbox:new(false, get_hash(plugin_label .. '_draw_keybind_data'))
+local move_keybind_data = checkbox:new(false, get_hash(plugin_label .. '_move_keybind_data'))
+if PERSISTENT_MODE ~= nil and PERSISTENT_MODE ~= false then
+    gui.elements.draw_keybind_toggle:set(draw_keybind_data:get())
+    -- gui.elements.move_keybind_toggle:set(move_keybind_data:get())
+end
 
 local function update_locals()
     local_player = get_local_player()
-    player_position = local_player and local_player:get_position()
 end
 
 local function main_pulse()
-    if debounce_time ~= nil and debounce_time + debounce_timeout > get_time_since_inject() then return end
-    debounce_time = get_time_since_inject()
-
-    if utils.player_loading() then
-        -- extend last_update so that it doesnt trigger unstuck straight after loading
-        navigator.last_update = get_time_since_inject() + 5
-        navigator.unstuck_nodes = {}
-    end
     settings:update_settings()
-    if not local_player then return end
-
-    -- local min = vec3:new(player_position:x(), player_position:y(), player_position:z()-1)
-    -- local max = vec3:new(player_position:x(), player_position:y(), player_position:z()+2)
-    -- console.print('a')
-    -- console.print(player_position:z())
-    -- console.print(tostring(utility.is_point_walkeable(player_position)))
-    -- console.print(tostring(utility.is_point_walkeable(min)))
-    -- console.print(tostring(utility.is_point_walkeable(max)))
-
-
-
-    if (not settings.enabled or not settings.get_keybind_state()) then return end
-
+    if PERSISTENT_MODE ~= nil and PERSISTENT_MODE ~= false  then
+        if draw_keybind_data:get() ~= (gui.elements.draw_keybind_toggle:get_state() == 1) then
+            draw_keybind_data:set(gui.elements.draw_keybind_toggle:get_state() == 1)
+        end
+        if move_keybind_data:get() ~= (gui.elements.move_keybind_toggle:get_state() == 1) then
+            move_keybind_data:set(gui.elements.move_keybind_toggle:get_state() == 1)
+        end
+    end
+    if gui.elements.reset_keybind:get_state() == 1 then
+        if debounce_time ~= nil and debounce_time + debounce_timeout > get_time_since_inject() then return end
+        gui.elements.reset_keybind:set(false)
+        debounce_time = get_time_since_inject()
+        navigator.reset()
+    end
     if local_player:is_dead() then
         revive_at_checkpoint()
-    elseif not tracker.paused and not utils.player_loading() then
-        local start_update = os.clock()
-        navigator.update()
-        tracker.timer_update = os.clock() - start_update
-        -- local goal = vec3:new(-2058.5,-1081,32.373046875)
-        -- BatmobilePlugin.set_target(plugin_label, goal)
-        local start_move = os.clock()
-        navigator.move()
-        tracker.timer_move = os.clock() - start_move
     end
-    -- local start_update = os.clock()
-    -- navigator.update()
-    -- tracker.timer_update = os.clock() - start_update
-    -- BatmobilePlugin.pause(plugin_label)
-    -- local goal = vec3:new(-2058.5,-1081,32.373046875)
-    -- BatmobilePlugin.set_target(plugin_label, goal)
-    -- local goal1 = vec3:new(-0.48046875, 4.6123046875, 0.0390625 )
-    -- local goal2 = vec3:new(4.828125, 0.0380859375, 0.0390625 )
-    -- if get_time_since_inject() % 2 < 1 then
-    --     BatmobilePlugin.set_target(plugin_label, goal1)
-    -- else
-    --     BatmobilePlugin.set_target(plugin_label, goal2)
-    -- end
-    -- local start_move = os.clock()
-    -- navigator.move()
-    -- tracker.timer_update = os.clock() - start_move
-
-    -- local buffs = local_player:get_buffs()
-    -- for _, buff in pairs(buffs) do
-    --     if tostring(buff.name_hash) == '386126' then
-    --         console.print(buff:get_remaining_time())
-    --     end
-    -- end
 end
 
 local function render_pulse()
-    -- if not (settings.get_keybind_state()) then return end
-    if not local_player or not settings.enabled or settings.draw ~= 1 then return end
+    if not local_player or not settings.draw then return end
     drawing.draw_nodes(local_player)
 end
 

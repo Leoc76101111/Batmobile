@@ -47,20 +47,10 @@ external.set_target = function(caller, target)
     -- console.print('set_target called by ' .. caller)
     navigator.set_target(target)
 end
-external.set_goal = function(caller, target)
-    tracker.external_caller = caller
-    -- console.print('set_goal called by ' .. caller)
-    navigator.set_goal(target)
-end
 external.clear_target = function (caller)
     tracker.external_caller = caller
     -- console.print('clear_target called by ' .. caller)
     navigator.clear_target()
-end
-external.clear_goal = function (caller)
-    tracker.external_caller = caller
-    -- console.print('clear_goal called by ' .. caller)
-    navigator.clear_goal()
 end
 external.distance = function (caller, a, b)
     tracker.external_caller = caller

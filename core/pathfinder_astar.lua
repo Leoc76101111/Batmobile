@@ -1,9 +1,7 @@
 local utils = require 'core.utils'
 local settings = require 'core.settings'
 
-local pathfinder_astar = {
-    counter = 0,
-}
+local pathfinder_astar = {}
 
 local get_lowest_f_score = function (open_set, f_score)
     local lowest = nil
@@ -77,13 +75,13 @@ pathfinder_astar.find_path = function (start, goal)
     local g_score = {[start_str] = 0}
     local f_score = {[start_str] = heuristic(start_node, goal_node)}
     local prev_nodes = {}
-    pathfinder_astar.counter = 0
+    local counter = 0
     while utils.get_set_count(open_set) > 0 do
-        if pathfinder_astar.counter > 1500 then
-            console.print('no path to target (over counter) ' .. utils.vec_to_string(goal))
+        if counter > 1500 then
+            console.print('no path (over counter) ' .. utils.vec_to_string(start) .. '>' .. utils.vec_to_string(goal))
             return {}
         end
-        pathfinder_astar.counter = pathfinder_astar.counter + 1
+        counter = counter + 1
         local cur_str, cur_node = get_lowest_f_score(open_set, f_score)
         if utils.distance(cur_node, goal_node) == 0 then
             -- console.print('path found')
@@ -107,7 +105,7 @@ pathfinder_astar.find_path = function (start, goal)
             end
         end
     end
-    console.print('no path to target (no openset) ' .. utils.vec_to_string(goal))
+    console.print('no path (no openset) ' .. utils.vec_to_string(start) .. '>' .. utils.vec_to_string(goal))
     return {}
 end
 
