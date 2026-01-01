@@ -61,6 +61,7 @@ utils.normalize_node = function (node)
     return vec3:new(norm_x, norm_y, node:z())
 end
 utils.vec_to_string = function (node)
+    if node.x == nil or node.y == nil then return nil end
     return tostring(node:x()) .. ',' .. tostring(node:y())
 end
 utils.string_to_vec = function (str)
@@ -112,5 +113,9 @@ utils.get_character_class = function (local_player)
     else
         return 'default'
     end
+end
+utils.log = function (level, msg)
+    if level > settings.log_level then return end
+    console.print(settings.plugin_label .. ': ' .. tostring(msg))
 end
 return utils

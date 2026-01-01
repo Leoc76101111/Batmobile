@@ -8,7 +8,6 @@ local navigator = {
     last_pos = nil,
     last_update = nil,
     target = nil,
-    goal = nil,
     done = false,
     paused = false,
     path = {},
@@ -160,13 +159,20 @@ select_target = function (prev_target)
                 return select_target(prev_target)
             end
             navigator.last_trav = closest_trav
+            utils.log(1, 'selecting traversal ' .. closest_trav:get_skin_name())
             return closest_node
         end
     else
         navigator.last_trav = nil
         navigator.blacklisted_trav = {}
     end
-    return explorer_dfs.select_node(local_player, prev_target)
+    local target = explorer_dfs.select_node(local_player, prev_target)
+    if target ~= nil then
+        utils.log(2, 'selecting target ' .. utils.vec_to_string(target))
+    else
+        utils.log(2, 'selecting target nil')
+    end
+    return target
 end
 local function shuffle_table(tbl)
     local len = #tbl
@@ -186,7 +192,6 @@ local get_unstuck_node = function ()
     local test_node, test_node_str, valid, walkable
 
     if cur_node ~= nil then
-        -- console.print('pattern all')
         local x = cur_node:x()
         local y = cur_node:y()
 
@@ -222,29 +227,35 @@ local unstuck = function (local_player)
     local unstuck_node, unstuck_node_str = get_unstuck_node()
     if unstuck_node ~= nil and unstuck_node_str ~= nil then
         -- try evade if not add to path
+        local movement_spell_id, need_raycast = get_movement_spell_id(local_player)
+        local raycast_success = true
+        if need_raycast then
+            local dist = utils.distance(navigator.last_pos, unstuck_node)
+            raycast_success = utility.is_ray_cast_walkeable(navigator.last_pos, unstuck_node, 0.5, dist)
+        end
         if utility.can_cast_spell(337031) and
             navigator.unstuck_nodes[unstuck_node_str] == nil
         then
-            console.print('unstuck by evading')
+            utils.log(1, 'unstuck by evading')
             navigator.unstuck_nodes[unstuck_node_str] = 'evaded'
             cast_spell.position(337031, unstuck_node, 0)
             return
-        elseif utility.can_cast_spell(959728) and
+        elseif movement_spell_id ~= nil and raycast_success and
             (navigator.unstuck_nodes[unstuck_node_str] == nil or
             navigator.unstuck_nodes[unstuck_node_str] == 'evaded')
         then
-            console.print('unstuck by teleporting')
+            utils.log(1, 'unstuck by movement spell')
             navigator.unstuck_nodes[unstuck_node_str] = 'teleporting'
-            cast_spell.position(959728, unstuck_node, 0)
+            cast_spell.position(movement_spell_id, unstuck_node, 0)
             return
-        elseif navigator.unstuck_nodes[unstuck_node_str] ~= 'injected' then
-            console.print('unstuck by injecting path')
+        else
+            utils.log(1, 'unstuck by injecting path')
             navigator.unstuck_nodes[unstuck_node_str] = 'injected'
             table.insert(navigator.path, 1, unstuck_node)
             return
         end
     end
-    console.print('unstuck by choosing new target')
+    utils.log(1, 'unstuck by choosing new target')
     navigator.target = select_target(navigator.target)
     navigator.unstuck_nodes = {}
 end
@@ -268,6 +279,7 @@ navigator.update = function ()
     explorer_dfs.update(local_player)
 end
 navigator.reset = function ()
+    utils.log(1, 'reseting')
     explorer_dfs.reset()
     navigator.target = nil
     navigator.done = false
@@ -298,26 +310,6 @@ end
 navigator.clear_target = function ()
     navigator.target = nil
     navigator.path = {}
-end
-navigator.clear_goal = function()
-    navigator.goal = nil
-end
-navigator.set_goal = function (goal)
-    if type(goal) == 'string' then
-        
-    elseif goal.get_position then
-        navigator.goal = utils.normalize_node(goal:get_position())
-        if utils.distance(navigator.last_pos, navigator.goal) <= 50 then
-            navigator.set_target(navigator.goal)
-        end
-    elseif goal.x and goal.y and goal.z then
-        navigator.goal = utils.normalize_node(goal)
-        if utils.distance(navigator.last_pos, navigator.goal) <= 50 then
-            navigator.set_target(navigator.goal)
-        end
-    else
-        -- not implemented
-    end
 end
 navigator.move = function ()
     if navigator.move_time + navigator.move_timeout > get_time_since_inject() then return end
@@ -355,11 +347,13 @@ navigator.move = function ()
         local movement_spell_id, need_raycast = get_movement_spell_id(local_player)
         local raycast_success = true
         if need_raycast then
-            raycast_success = utility.is_ray_cast_walkeable(cur_node, navigator.target, 0.5, 0.5)
+            local dist = utils.distance(cur_node, navigator.target)
+            raycast_success = utility.is_ray_cast_walkeable(cur_node, navigator.target, 0.5, dist)
         end
         if movement_spell_id ~= nil and raycast_success then
             local success = cast_spell.position(movement_spell_id, navigator.target, 0)
-            if success then 
+            if success then
+                utils.log(2, 'movement spell to ' .. utils.vec_to_string(navigator.target))
                 navigator.update()
                 player_pos = local_player:get_position()
                 cur_node = utils.normalize_node(player_pos)
@@ -402,12 +396,12 @@ navigator.move = function ()
     then
         if navigator.done_delay ~= nil and navigator.done_delay < get_time_since_inject() then
             if explorer_dfs.frontier_count > 0 and #explorer_dfs.backtrack == 0 then
-                console.print('not done but no more backtrack, reseting')
+                utils.log(1, 'not done but no more backtrack, reseting')
                 navigator.reset()
                 return
             else
                 navigator.done = true
-                console.print('finish exploration')
+                utils.log(1, 'finish exploration')
             end
         elseif navigator.done_delay == nil then
             navigator.done_delay = get_time_since_inject() + 1
@@ -444,6 +438,7 @@ navigator.move = function ()
             then
                 pathfinder.request_move(node)
                 moved = true
+                utils.log(2, 'moving to ' .. utils.vec_to_string(node))
             end
             new_path[#new_path+1] = node
         end

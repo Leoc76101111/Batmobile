@@ -13,7 +13,7 @@ local draw_keybind_data = checkbox:new(false, get_hash(plugin_label .. '_draw_ke
 local move_keybind_data = checkbox:new(false, get_hash(plugin_label .. '_move_keybind_data'))
 if PERSISTENT_MODE ~= nil and PERSISTENT_MODE ~= false then
     gui.elements.draw_keybind_toggle:set(draw_keybind_data:get())
-    -- gui.elements.move_keybind_toggle:set(move_keybind_data:get())
+    gui.elements.move_keybind_toggle:set(move_keybind_data:get())
 end
 
 local function update_locals()

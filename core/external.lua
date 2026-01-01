@@ -14,47 +14,71 @@ external.is_paused = function ()
     return navigator.paused
 end
 external.pause = function (caller)
+    if caller == nil then
+        utils.log(2,'pause called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('pause called by ' .. caller)
+    utils.log(2, 'pause called by ' .. tostring(caller))
     navigator.pause()
 end
 external.resume = function (caller)
+    if caller == nil then
+        utils.log(2,'resume called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('resume called by ' .. caller)
+    utils.log(2, 'resume called by ' .. tostring(caller))
     navigator.unpause()
 end
 external.reset = function (caller)
+    if caller == nil then
+        utils.log(2,'reset called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('reset called by ' .. caller)
+    utils.log(2, 'reset called by ' .. tostring(caller))
     navigator.reset()
 end
 external.move = function (caller)
+    if caller == nil then
+        utils.log(2,'move called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('move called by ' .. caller)
+    utils.log(2, 'move called by ' .. tostring(caller))
     local start_move = os.clock()
     navigator.move()
     tracker.timer_move = os.clock() - start_move
 end
 external.update = function (caller)
+    if caller == nil then
+        utils.log(2,'update called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('update called by ' .. caller)
+    utils.log(2, 'update called by ' .. tostring(caller))
     local start_update = os.clock()
     navigator.update()
     tracker.timer_update = os.clock() - start_update
 end
 external.set_target = function(caller, target)
+    if caller == nil then
+        utils.log(2,'set_target called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('set_target called by ' .. caller)
+    utils.log(2, 'set_target called by ' .. tostring(caller))
     navigator.set_target(target)
 end
 external.clear_target = function (caller)
+    if caller == nil then
+        utils.log(2,'clear_target called with no caller')
+        return
+    end
     tracker.external_caller = caller
-    -- console.print('clear_target called by ' .. caller)
+    utils.log(2, 'clear_target called by ' .. tostring(caller))
     navigator.clear_target()
-end
-external.distance = function (caller, a, b)
-    tracker.external_caller = caller
-    return utils.distance(a, b)
 end
 
 return external

@@ -32,9 +32,16 @@ end
 
 gui.plugin_label = plugin_label
 gui.plugin_version = plugin_version
+gui.log_levels_enum = {
+    DISABLED = 0,
+    INFO = 1,
+    DEBUG = 2
+}
+gui.log_level = { 'Disabled', 'Informative', 'Debug'}
 
 gui.elements = {
     main_tree = tree_node:new(0),
+    log_level = combo_box:new(0, get_hash(plugin_label .. '_' .. 'log_level')),
     reset_keybind = keybind:new(0x0A, true, get_hash(plugin_label .. '_reset_keybind' )),
     draw_keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_draw_keybind_toggle' )),
     movement_tree = tree_node:new(1),
@@ -56,6 +63,7 @@ function gui.render()
     gui.elements.draw_keybind_toggle:render('Toggle Drawing', 'Toggle drawing')
     local class = get_character_class()
     gui.elements.move_keybind_toggle:render('use movement spells', 'use movement spells')
+    gui.elements.log_level:render('logging', gui.log_level, 'Select log level')
     if gui.elements.movement_tree:push('Movement Spells') then
         gui.elements.use_evade:render('evade', 'use evade for movement')
         if class == 'sorcerer' then
