@@ -4,6 +4,7 @@ local gui          = require 'gui'
 local settings     = require 'core.settings'
 local external      = require 'core.external'
 local drawing      = require 'core.drawing'
+local utils     = require 'core.utils'
 local navigator     = require 'core.navigator'
 
 local local_player
@@ -21,6 +22,10 @@ local function update_locals()
 end
 
 local function main_pulse()
+    if utils.player_loading() then
+        -- extend last_update so that it doesnt trigger unstuck straight after loading
+        navigator.last_update = get_time_since_inject() + 5
+    end
     settings:update_settings()
     if PERSISTENT_MODE ~= nil and PERSISTENT_MODE ~= false  then
         if draw_keybind_data:get() ~= (gui.elements.draw_keybind_toggle:get_state() == 1) then
