@@ -93,9 +93,10 @@ drawing.draw_nodes = function (local_player)
     local speed = local_player:get_current_speed()
     local speed_str = string.format("%.3f",local_player:get_current_speed())
     if speed < 10 then
+        speed_str = speed_str .. '  '
+    elseif speed < 100 then
         speed_str = speed_str .. ' '
     else
-    end
     local messages_left = {
         ' speed     ' .. speed_str,
         ' path      ' .. tostring(#path),

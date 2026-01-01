@@ -60,12 +60,12 @@ gui.elements = {
 }
 function gui.render()
     if not gui.elements.main_tree:push('Batmobile | Leoric | v' .. gui.plugin_version) then return end
-    gui.elements.reset_keybind:render('Reset batmobile', 'Keybind to reset batmobile')
     gui.elements.draw_keybind_toggle:render('Toggle Drawing', 'Toggle drawing')
-    local class = get_character_class()
     gui.elements.move_keybind_toggle:render('use movement spells', 'use movement spells')
+    gui.elements.reset_keybind:render('Reset batmobile', 'Keybind to reset batmobile')
     gui.elements.log_level:render('logging', gui.log_level, 'Select log level')
     if gui.elements.movement_tree:push('Movement Spells') then
+        local class = get_character_class()
         gui.elements.use_evade:render('evade', 'use evade for movement')
         if class == 'sorcerer' then
             gui.elements.use_teleport:render('teleport', 'use teleport for movement')
