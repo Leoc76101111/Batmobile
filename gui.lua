@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '0.0.13'
+local plugin_version = '1.0.0'
 console.print("Lua Plugin - Batmobile - Leoric - v" .. plugin_version)
 
 local get_character_class = function (local_player)
@@ -57,6 +57,8 @@ gui.elements = {
     use_charge = create_checkbox(true, "use_charge"),
     use_falling_star = create_checkbox(true, "use_falling_star"),
     use_aoj = create_checkbox(true, "use_aoj"),
+    advanced_tree = tree_node:new(1),
+    max_iteration = slider_int:new(250, 5000, 1500, get_hash(plugin_label .. '_' .. 'max_iteration')),
 }
 function gui.render()
     if not gui.elements.main_tree:push('Batmobile | Leoric | v' .. gui.plugin_version) then return end
@@ -65,6 +67,7 @@ function gui.render()
     gui.elements.reset_keybind:render('Reset batmobile', 'Keybind to reset batmobile')
     gui.elements.log_level:render('logging', gui.log_level, 'Select log level')
     if gui.elements.movement_tree:push('Movement Spells') then
+        render_menu_header("Need 'use movement spell' to be toggled on to work")
         local class = get_character_class()
         gui.elements.use_evade:render('evade', 'use evade for movement')
         if class == 'sorcerer' then
@@ -86,6 +89,11 @@ function gui.render()
         end
         gui.elements.movement_tree:pop()
     end
+    -- if gui.elements.advanced_tree:push('Advanced settings') then
+    --     gui.elements.max_iteration:render('Max iteration', 'smaller = weaker but less lag, bigger = better pathfinding but laggier')
+        
+    --     gui.elements.advanced_tree:pop()
+    -- end
     gui.elements.main_tree:pop()
 end
 

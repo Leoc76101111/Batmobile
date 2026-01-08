@@ -354,7 +354,7 @@ navigator.move = function ()
             local success = cast_spell.position(movement_spell_id, navigator.target, 0)
             if success then
                 utils.log(2, 'movement spell to ' .. utils.vec_to_string(navigator.target))
-                navigator.update()
+                if not navigator.paused then navigator.update() end
                 player_pos = local_player:get_position()
                 cur_node = utils.normalize_node(player_pos)
             end
