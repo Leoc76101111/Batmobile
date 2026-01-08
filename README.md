@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V1.0.0
+#### V1.0.1
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
@@ -17,10 +17,19 @@ Batmobile also handles any traversals in game if move command is given.
 ### Movement spells
 - checkboxes for movement spells available to your class. requires "Use movement spells" to be toggled on.
 
+### Debug
+- Toggle Explorer -- toggle to freeroam with explorer
+- Logging -- set log level
+
 ## Example integrations
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.1
+Added debug section
+Added toggle explorer to debug section
+Moved logging to debug section
+
 ### V1.0.0
 Initial release
 

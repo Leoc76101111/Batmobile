@@ -5,6 +5,7 @@ local settings     = require 'core.settings'
 local external      = require 'core.external'
 local drawing      = require 'core.drawing'
 local utils     = require 'core.utils'
+local tracker     = require 'core.tracker'
 local navigator     = require 'core.navigator'
 
 local local_player
@@ -41,8 +42,17 @@ local function main_pulse()
         debounce_time = get_time_since_inject()
         navigator.reset()
     end
-    if local_player:is_dead() then
-        revive_at_checkpoint()
+    if gui.elements.freeroam_keybind_toggle:get_state() == 1 then
+        if local_player:is_dead() then
+            revive_at_checkpoint()
+        end
+        navigator.unpause()
+        local start_update = os.clock()
+        navigator.update()
+        tracker.timer_update = os.clock() - start_update
+        local start_move = os.clock()
+        navigator.move()
+        tracker.timer_move = os.clock() - start_move
     end
 end
 

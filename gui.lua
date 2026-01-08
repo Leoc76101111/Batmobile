@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '1.0.0'
+local plugin_version = '1.0.1'
 console.print("Lua Plugin - Batmobile - Leoric - v" .. plugin_version)
 
 local get_character_class = function (local_player)
@@ -42,7 +42,6 @@ gui.log_level = { 'Disabled', 'Info', 'Debug'}
 
 gui.elements = {
     main_tree = tree_node:new(0),
-    log_level = combo_box:new(0, get_hash(plugin_label .. '_' .. 'log_level')),
     reset_keybind = keybind:new(0x0A, true, get_hash(plugin_label .. '_reset_keybind' )),
     draw_keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_draw_keybind_toggle' )),
     movement_tree = tree_node:new(1),
@@ -59,13 +58,15 @@ gui.elements = {
     use_aoj = create_checkbox(true, "use_aoj"),
     advanced_tree = tree_node:new(1),
     max_iteration = slider_int:new(250, 5000, 1500, get_hash(plugin_label .. '_' .. 'max_iteration')),
+    debug_tree = tree_node:new(1),
+    log_level = combo_box:new(0, get_hash(plugin_label .. '_' .. 'log_level')),
+    freeroam_keybind_toggle = keybind:new(0x0A, true, get_hash(plugin_label .. '_freeroam_keybind_toggle' )),
 }
 function gui.render()
     if not gui.elements.main_tree:push('Batmobile | Leoric | v' .. gui.plugin_version) then return end
     gui.elements.draw_keybind_toggle:render('Toggle Drawing', 'Toggle drawing')
     gui.elements.move_keybind_toggle:render('use movement spells', 'use movement spells')
     gui.elements.reset_keybind:render('Reset batmobile', 'Keybind to reset batmobile')
-    gui.elements.log_level:render('logging', gui.log_level, 'Select log level')
     if gui.elements.movement_tree:push('Movement Spells') then
         render_menu_header("Need 'use movement spell' to be toggled on to work")
         local class = get_character_class()
@@ -88,6 +89,12 @@ function gui.render()
 
         end
         gui.elements.movement_tree:pop()
+    end
+    if gui.elements.debug_tree:push('Debug') then
+        gui.elements.freeroam_keybind_toggle:render('Toggle explorer', 'enable freeroam explorer')
+        render_menu_header('WARNING running explorer in overworld can cause big lag spike due to multiple elevation and traversals close by')
+        gui.elements.log_level:render('logging', gui.log_level, 'Select log level')
+        gui.elements.debug_tree:pop()
     end
     -- if gui.elements.advanced_tree:push('Advanced settings') then
     --     gui.elements.max_iteration:render('Max iteration', 'smaller = weaker but less lag, bigger = better pathfinding but laggier')
