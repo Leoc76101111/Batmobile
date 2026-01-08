@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V0.0.1
+#### V1.0.0
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
