@@ -25,7 +25,7 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
-### V1.0.1
+### V1.0.2
 Added disable_spell to set_target parameter
 setting disable_spell to true, will disable all movement spell while navigating to target
 
