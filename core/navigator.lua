@@ -371,7 +371,6 @@ navigator.move = function ()
                     node_dist = dist
                 end
             end
-            navigator.path = new_path
             if spell_node ~= nil then
                 local raycast_success = true
                 if need_raycast then
@@ -385,7 +384,7 @@ navigator.move = function ()
                         if not navigator.paused then navigator.update() end
                         player_pos = local_player:get_position()
                         cur_node = utils.normalize_node(player_pos)
-                        navigator.path = {}
+                        navigator.path = new_path
                         local node_str = utils.vec_to_string(spell_node)
                         navigator.blacklisted_spell_node[node_str] = spell_node
                     end
