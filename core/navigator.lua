@@ -363,7 +363,10 @@ navigator.move = function ()
                 if selected or dist > navigator.spell_dist or node_dist > dist then
                     new_path[#new_path+1] = node
                     selected = true
-                elseif navigator.blacklisted_spell_node[node_str] == nil then
+                elseif navigator.blacklisted_spell_node[node_str] == nil and
+                    -- move to nodes that is >= movement step 
+                    utils.distance(node, cur_node) >= navigator.movement_step
+                then
                     spell_node = node
                     node_dist = dist
                 end
