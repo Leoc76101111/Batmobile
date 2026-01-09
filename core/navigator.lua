@@ -16,6 +16,7 @@ local navigator = {
     done_delay = nil,
     movement_step = 4,
     movement_dist = math.sqrt(4*4*2), -- diagonal dist
+    spell_dist = 12,
     unstuck_nodes = {},
     blacklisted_trav = {},
     move_time = -1,
@@ -347,22 +348,40 @@ navigator.move = function ()
     end
 
     -- movement spells
-    if not utils.player_in_town() and navigator.target ~= nil and
-        utils.distance(cur_node, navigator.target) <= 8
-    then
+    if not utils.player_in_town() and #navigator.path > 0 then
         local movement_spell_id, need_raycast = get_movement_spell_id(local_player)
-        local raycast_success = true
-        if need_raycast then
-            local dist = utils.distance(cur_node, navigator.target)
-            raycast_success = utility.is_ray_cast_walkeable(cur_node, navigator.target, 0.5, dist)
-        end
-        if movement_spell_id ~= nil and raycast_success then
-            local success = cast_spell.position(movement_spell_id, navigator.target, 0)
-            if success then
-                utils.log(2, 'movement spell to ' .. utils.vec_to_string(navigator.target))
-                if not navigator.paused then navigator.update() end
-                player_pos = local_player:get_position()
-                cur_node = utils.normalize_node(player_pos)
+        if movement_spell_id ~= nil then
+            local spell_node = nil
+            local node_dist = -1
+            local new_path = {}
+            local selected = false
+            for _, node in ipairs(navigator.path) do
+                local dist = utils.distance(node, cur_node)
+                if selected or dist > navigator.spell_dist or node_dist > dist then
+                    new_path[#new_path+1] = node
+                    selected = true
+                else
+                    spell_node = node
+                    node_dist = dist
+                end
+            end
+            navigator.path = new_path
+            if spell_node ~= nil then
+                local raycast_success = true
+                if need_raycast then
+                    local dist = utils.distance(cur_node, spell_node)
+                    raycast_success = utility.is_ray_cast_walkeable(cur_node, spell_node, 0.5, dist)
+                end
+                if raycast_success then
+                    local success = cast_spell.position(movement_spell_id, spell_node, 0)
+                    if success then
+                        utils.log(2, 'movement spell to ' .. utils.vec_to_string(spell_node))
+                        if not navigator.paused then navigator.update() end
+                        player_pos = local_player:get_position()
+                        cur_node = utils.normalize_node(player_pos)
+                        navigator.path = {}
+                    end
+                end
             end
         end
     end
