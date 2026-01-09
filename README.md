@@ -26,7 +26,7 @@ TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
 ### V1.0.3
-Updated movement spell logic to follow path instead of direct to target
+Updated movement spell logic to follow path instead of direct to target and also blacklist node from repeated movement spell
 
 ### V1.0.2
 Added disable_spell to set_target parameter

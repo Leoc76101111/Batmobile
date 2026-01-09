@@ -17,6 +17,7 @@ local navigator = {
     movement_step = 4,
     movement_dist = math.sqrt(4*4*2), -- diagonal dist
     spell_dist = 12,
+    blacklisted_spell_node = {},
     unstuck_nodes = {},
     blacklisted_trav = {},
     move_time = -1,
@@ -293,6 +294,7 @@ navigator.reset = function ()
     navigator.done_delay = nil
     navigator.unstuck_nodes = {}
     navigator.blacklisted_trav = {}
+    navigator.blacklisted_spell_node = {}
 end
 navigator.set_target = function (target, disable_spell)
     if target.get_position then
@@ -357,10 +359,11 @@ navigator.move = function ()
             local selected = false
             for _, node in ipairs(navigator.path) do
                 local dist = utils.distance(node, cur_node)
+                local node_str = utils.vec_to_string(node)
                 if selected or dist > navigator.spell_dist or node_dist > dist then
                     new_path[#new_path+1] = node
                     selected = true
-                else
+                elseif navigator.blacklisted_spell_node[node_str] == nil then
                     spell_node = node
                     node_dist = dist
                 end
@@ -380,6 +383,8 @@ navigator.move = function ()
                         player_pos = local_player:get_position()
                         cur_node = utils.normalize_node(player_pos)
                         navigator.path = {}
+                        local node_str = utils.vec_to_string(spell_node)
+                        navigator.blacklisted_spell_node[node_str] = spell_node
                     end
                 end
             end
@@ -392,6 +397,7 @@ navigator.move = function ()
         navigator.last_trav == nil and
         (navigator.target == nil or utils.distance(cur_node, navigator.target) <= 1)
     then
+        navigator.blacklisted_spell_node = {}
         if navigator.paused then return end
         navigator.target = select_target(nil)
         navigator.path = {}
