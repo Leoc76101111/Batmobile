@@ -63,14 +63,14 @@ external.update = function (caller)
     navigator.update()
     tracker.timer_update = os.clock() - start_update
 end
-external.set_target = function(caller, target)
+external.set_target = function(caller, target, disable_spell)
     if caller == nil then
         utils.log(2,'set_target called with no caller')
         return
     end
     tracker.external_caller = caller
     utils.log(2, 'set_target called by ' .. tostring(caller))
-    navigator.set_target(target)
+    navigator.set_target(target, disable_spell)
 end
 external.clear_target = function (caller)
     if caller == nil then

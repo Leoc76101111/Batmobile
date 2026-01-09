@@ -16,13 +16,13 @@ local navigator = {
     done_delay = nil,
     movement_step = 4,
     movement_dist = math.sqrt(4*4*2), -- diagonal dist
-    is_custom_target = false,
     unstuck_nodes = {},
     blacklisted_trav = {},
     move_time = -1,
     move_timeout = 0.05,
     update_time = -1,
     update_timeout = 0.05,
+    disable_spell = nil
 }
 local get_nearby_travs = function (local_player)
     local traversals = {}
@@ -74,6 +74,7 @@ local get_closeby_node = function (trav_node, max_dist)
 end
 local get_movement_spell_id = function(local_player)
     if not settings.use_movement then return end
+    if navigator.disable_spell == true then return end
     local class = utils.get_character_class(local_player)
     if class == 'sorcerer' then
         if settings.use_teleport and utility.can_cast_spell(288106) then
@@ -122,7 +123,6 @@ local select_target
 select_target = function (prev_target)
     local local_player = get_local_player()
     if not local_player then return nil end
-    navigator.is_custom_target = false
     local player_pos = local_player:get_position()
     local traversals = get_nearby_travs(local_player)
     if #traversals > 0 then
@@ -293,23 +293,25 @@ navigator.reset = function ()
     navigator.unstuck_nodes = {}
     navigator.blacklisted_trav = {}
 end
-navigator.set_target = function (target)
+navigator.set_target = function (target, disable_spell)
     if target.get_position then
         target = target:get_position()
     end
     local new_target = utils.normalize_node(target)
     if navigator.target == nil or
-        utils.distance(navigator.target, new_target) > 0
+        utils.distance(navigator.target, new_target) > 0 or
+        navigator.disable_spell ~= disable_spell
     then
-        navigator.is_custom_target = false
         navigator.target = new_target
         navigator.path = {}
+        navigator.disable_spell = disable_spell
     end
     explorer_dfs.backtracking = false
 end
 navigator.clear_target = function ()
     navigator.target = nil
     navigator.path = {}
+    navigator.disable_spell = nil
 end
 navigator.move = function ()
     if navigator.move_time + navigator.move_timeout > get_time_since_inject() then return end
@@ -329,6 +331,8 @@ navigator.move = function ()
             if name:match('Jump') then
                 -- jump doesnt have traversal buff for some reason
                 navigator.target = nil
+                navigator.path = {}
+                navigator.disable_spell = nil
                 navigator.last_trav = nil
                 navigator.trav_delay = get_time_since_inject() + 4
             end
@@ -336,6 +340,8 @@ navigator.move = function ()
         if has_traversal_buff(local_player) then
             navigator.trav_delay = get_time_since_inject() + 4
             navigator.target = nil
+            navigator.path = {}
+            navigator.disable_spell = nil
             navigator.last_trav = nil
         end
     end
@@ -370,6 +376,7 @@ navigator.move = function ()
         if navigator.paused then return end
         navigator.target = select_target(nil)
         navigator.path = {}
+        navigator.disable_spell = nil
     elseif navigator.target ~= nil and
         navigator.last_update ~= nil and
         navigator.last_update + update_timeout < get_time_since_inject() and
@@ -420,6 +427,7 @@ navigator.move = function ()
             if navigator.paused then return end
             navigator.target = select_target(navigator.target)
             navigator.path = {}
+            navigator.disable_spell = nil
             return
         end
         tracker.debug_node = nil
