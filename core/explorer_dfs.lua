@@ -21,7 +21,8 @@ local explorer_dfs = {
     backtracking = false,
     backtrack_node = nil,
     backtrack_min_dist = 4,
-    backtrack_failed_time = -1
+    backtrack_failed_time = -1,
+    backtrack_timeout = 5
 }
 local add_frontier = function (node_str, node)
     explorer_dfs.frontier[node_str] = explorer_dfs.frontier_index
@@ -110,6 +111,7 @@ explorer_dfs.reset = function ()
     explorer_dfs.backtrack = {}
     explorer_dfs.backtrack_node = nil
     explorer_dfs.backtracking = false
+    explorer_dfs.backtrack_failed_time = -1
     explorer_dfs.last_dir = nil
 end
 explorer_dfs.set_current_pos = function (local_player)
@@ -191,7 +193,8 @@ explorer_dfs.select_node = function (local_player, failed)
                 explorer_dfs.backtrack_failed_time = get_time_since_inject()
                 explorer_dfs.backtrack_node = utils.vec_to_string(failed)
                 return failed
-            elseif explorer_dfs.backtrack_failed_time + 5 < get_time_since_inject() then
+            -- retry the failed node for up to 5 seconds
+            elseif explorer_dfs.backtrack_failed_time + explorer_dfs.backtrack_timeout >= get_time_since_inject() then
                 return failed
             end
         end

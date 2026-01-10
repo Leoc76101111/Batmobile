@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V1.0.3
+#### V1.0.4
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
@@ -25,6 +25,9 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.4
+Fixed backtrack logic not working properly when no path is found.
+
 ### V1.0.3
 Updated movement spell logic to follow path instead of direct to target and also blacklist node from repeated movement spell
 
