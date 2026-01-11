@@ -6,21 +6,21 @@ local explorer_dfs = {
     prev_pos = nil,
     visited = {},
     visited_count = 0,
-    radius = 8,
+    radius = 10,
     retry = {},
     frontier = {},
     frontier_node = {},
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
-    frontier_radius = 10,
-    frontier_max_dist = 14, -- fronter_radius + backtrack_min_dist
+    frontier_radius = 11,
+    frontier_max_dist = 17, -- fronter_radius + backtrack_min_dist
     retry_count = 0,
     backtrack = {},
     last_dir = nil,
     backtracking = false,
     backtrack_node = nil,
-    backtrack_min_dist = 4,
+    backtrack_min_dist = 6,
     backtrack_failed_time = -1,
     backtrack_timeout = 5
 }
@@ -260,6 +260,7 @@ explorer_dfs.select_node = function (local_player, failed)
                 local frontier_node = explorer_dfs.frontier_node[most_recent_str]
                 if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist then
                     remove_frontier(most_recent_str)
+                    explorer_dfs.backtracking = false
                     return frontier_node
                 end
             end
@@ -278,7 +279,8 @@ explorer_dfs.select_node = function (local_player, failed)
             end
         end
     end
-    -- no perimeter, no frontier all explored
+    -- no perimeter, no frontier all explored or unreachable
+    explorer_dfs.backtracking = false
     return nil
 end
 
