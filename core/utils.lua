@@ -118,4 +118,21 @@ utils.log = function (level, msg)
     if level > settings.log_level then return end
     console.print(settings.plugin_label .. ': ' .. tostring(msg))
 end
+
+utils.get_valid_node = function (node, alt_z)
+    local check_node, valid
+    check_node = utility.set_height_of_valid_position(node)
+    valid = utility.is_point_walkeable(check_node)
+    if not valid and alt_z ~= nil then
+        check_node = vec3:new(node:x(), node:y(), alt_z)
+        valid = utility.is_point_walkeable(check_node)
+    end
+    if valid then
+        return check_node
+    end
+    return nil
+end
+
+
+
 return utils

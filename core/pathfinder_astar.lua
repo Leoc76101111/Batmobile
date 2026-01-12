@@ -1,5 +1,6 @@
 local utils = require 'core.utils'
 local settings = require 'core.settings'
+local tracker = require 'core.tracker'
 
 local pathfinder_astar = {}
 
@@ -29,7 +30,53 @@ local reconstruct_path = function (closed_set, prev_nodes, cur_node)
     end
     return path
 end
-local get_neighbors = function (node, goal)
+
+local get_valid_neighbor = function (start, goal, x, y, evaluated)
+    -- console.print('a'.. x ..'b' ..y)
+    local node, node_str, valid
+    node = vec3:new(x, y, start:z())
+    node_str = utils.vec_to_string(node)
+    valid = evaluated[node_str]
+    if valid == nil then
+        node = utils.get_valid_node(node, goal:z())
+        valid = node ~= nil
+    end
+
+    evaluated[node_str] = valid
+    if not valid then
+        return nil, evaluated
+    end
+
+    local dist = settings.step
+    local directions = {
+        {-dist, 0},  -- up
+        {0, dist}, -- right
+        {dist, 0}, -- down
+        {0, -dist}, -- left
+        {-dist, dist}, -- up-right
+        {-dist, -dist}, -- up-left
+        {dist, dist}, -- down-right
+        {dist, -dist}, -- down-left
+    }
+    for _, direction in ipairs(directions) do
+        local dx = direction[1]
+        local dy = direction[2]
+        local newx = node:x() + dx
+        local newy = node:y() + dy
+        local new_node = vec3:new(newx, newy, start:z())
+        local new_node_str = utils.vec_to_string(new_node)
+        new_node = utils.get_valid_node(new_node, goal:z())
+
+        evaluated[new_node_str] = new_node ~= nil
+        if new_node == nil then
+            -- console.print('2')
+            return nil, evaluated
+        end
+    end
+
+    return node, evaluated
+end
+local get_neighbors = function (node, goal, evaluated)
     local neighbors = {}
     local dist = settings.step
     local directions = {
@@ -47,20 +94,18 @@ local get_neighbors = function (node, goal)
         local dy = direction[2]
         local newx = node:x() + dx
         local newy = node:y() + dy
-        local neigh_node = vec3:new(newx, newy, node:z())
-        local neigh_node_alt = vec3:new(newx, newy, goal:z())
-        local valid = utility.set_height_of_valid_position(neigh_node)
-        local walkable = utility.is_point_walkeable(valid)
-        local walkable_alt = utility.is_point_walkeable(neigh_node_alt)
-        if walkable then
-            neighbors[#neighbors+1] = neigh_node
-        elseif (newx == goal:x() and newy == goal:y()) then
-            neighbors[#neighbors+1] = goal
-        elseif walkable_alt then
-            neighbors[#neighbors+1] = neigh_node_alt
+        if (newx == goal:x() and newy == goal:y()) then
+            neighbors = {goal}
+            break
+        end
+        local valid = nil
+        valid, evaluated = get_valid_neighbor(node, goal, newx, newy, evaluated)
+
+        if valid ~= nil then
+            neighbors[#neighbors+1] = valid
         end
     end
-    return neighbors
+    return neighbors, evaluated
 end
 pathfinder_astar.get_counter = function ()
     return pathfinder_astar.counter
@@ -76,6 +121,7 @@ pathfinder_astar.find_path = function (start, goal)
     local f_score = {[start_str] = heuristic(start_node, goal_node)}
     local prev_nodes = {}
     local counter = 0
+    local evaluated = {}
     while utils.get_set_count(open_set) > 0 do
         if counter > 1500 then
             utils.log(1, 'no path (over counter) ' .. utils.vec_to_string(start) .. '>' .. utils.vec_to_string(goal))
@@ -85,12 +131,16 @@ pathfinder_astar.find_path = function (start, goal)
         local cur_str, cur_node = get_lowest_f_score(open_set, f_score)
         if utils.distance(cur_node, goal_node) == 0 then
             utils.log(2, 'path found')
+            tracker.evaluated = evaluated
             return reconstruct_path(closed_set, prev_nodes, cur_node)
         end
         open_set[cur_str] = nil
         closed_set[cur_str] = cur_node
 
-        for _, neighbor in ipairs(get_neighbors(cur_node, goal_node)) do
+        local neighbours
+        neighbours, evaluated = get_neighbors(cur_node, goal_node, evaluated)
+
+        for _, neighbor in ipairs(neighbours) do
             local neigh_str = utils.vec_to_string(neighbor)
             if closed_set[neigh_str] == nil then
                 local t_g_score = g_score[cur_str] + utils.distance(cur_node, neighbor)

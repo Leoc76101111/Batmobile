@@ -11,7 +11,8 @@ local tracker = {
     debug_node = nil,
     debug_actor = nil,
     paused = false,
-    done = false
+    done = false,
+    evaluated = {},
 }
 
 return tracker

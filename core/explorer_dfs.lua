@@ -6,21 +6,21 @@ local explorer_dfs = {
     prev_pos = nil,
     visited = {},
     visited_count = 0,
-    radius = 10,
+    radius = 12,
     retry = {},
     frontier = {},
     frontier_node = {},
     frontier_order = {},
     frontier_index = 0,
     frontier_count = 0,
-    frontier_radius = 11,
-    frontier_max_dist = 17, -- fronter_radius + backtrack_min_dist
+    frontier_radius = 13,
+    frontier_max_dist = 19,
     retry_count = 0,
     backtrack = {},
     last_dir = nil,
     backtracking = false,
     backtrack_node = nil,
-    backtrack_min_dist = 6,
+    backtrack_min_dist = 8,
     backtrack_failed_time = -1,
     backtrack_timeout = 5
 }
@@ -133,7 +133,6 @@ explorer_dfs.set_current_pos = function (local_player)
 end
 explorer_dfs.update = function (local_player)
     explorer_dfs.set_current_pos(local_player)
-    local player_pos = local_player:get_position()
     local cur_pos = explorer_dfs.cur_pos
     local prev_pos = explorer_dfs.prev_pos
     if prev_pos ~= nil and utils.distance(cur_pos,prev_pos) == 0 then return end
@@ -170,8 +169,10 @@ explorer_dfs.update = function (local_player)
                     remove_retry(node_str)
                     remove_frontier(node_str)
                 elseif explorer_dfs.frontier[node_str] == nil then
-                    remove_visited(node_str)
-                    remove_retry(node_str)
+                    if explorer_dfs.retry[node_str] ~= nil then
+                        remove_visited(node_str)
+                        remove_retry(node_str)
+                    end
                     local valid = utility.set_height_of_valid_position(node)
                     local walkable = utility.is_point_walkeable(valid)
                     if walkable then
@@ -261,6 +262,9 @@ explorer_dfs.select_node = function (local_player, failed)
                 if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist then
                     remove_frontier(most_recent_str)
                     explorer_dfs.backtracking = false
+                    local dx = frontier_node:x() - explorer_dfs.cur_pos:x()
+                    local dy = frontier_node:y() - explorer_dfs.cur_pos:y()
+                    explorer_dfs.last_dir = {dx, dy}
                     return frontier_node
                 end
             end
@@ -275,6 +279,9 @@ explorer_dfs.select_node = function (local_player, failed)
             explorer_dfs.backtrack[last_index] = nil
             if utils.distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
                 explorer_dfs.backtracking = true
+                local dx = last_pos:x() - explorer_dfs.cur_pos:x()
+                local dy = last_pos:y() - explorer_dfs.cur_pos:y()
+                explorer_dfs.last_dir = {dx, dy}
                 return last_pos
             end
         end

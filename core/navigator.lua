@@ -17,6 +17,8 @@ local navigator = {
     movement_step = 4,
     movement_dist = math.sqrt(4*4*2), -- diagonal dist
     spell_dist = 12,
+    spell_time = -1,
+    spell_timeout = 0.5,
     blacklisted_spell_node = {},
     unstuck_nodes = {},
     blacklisted_trav = {},
@@ -77,6 +79,8 @@ end
 local get_movement_spell_id = function(local_player)
     if not settings.use_movement then return end
     if navigator.disable_spell == true then return end
+    if navigator.spell_time + navigator.spell_timeout > get_time_since_inject() then return end
+    navigator.spell_time = get_time_since_inject()
     local class = utils.get_character_class(local_player)
     if class == 'sorcerer' then
         if settings.use_teleport and utility.can_cast_spell(288106) then
@@ -476,6 +480,8 @@ navigator.move = function ()
                 utils.log(2, 'moving to ' .. utils.vec_to_string(node))
             end
             new_path[#new_path+1] = node
+        else
+            new_path = {}
         end
     end
     navigator.path = new_path
