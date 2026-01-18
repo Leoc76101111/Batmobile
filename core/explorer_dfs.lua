@@ -121,7 +121,7 @@ local select_node_distance = function (local_player)
     else
         explorer_dfs.wrong_dir_count = 0
     end
-    if furthest_node == nil or explorer_dfs.wrong_dir_count > 3 then
+    if furthest_node == nil or explorer_dfs.wrong_dir_count > 2 then
         local index = explorer_dfs.frontier_index + 1
         while index >= 0 do
             index = index - 1
@@ -151,14 +151,44 @@ local select_node_distance = function (local_player)
         end
         -- restore secondary backtrack, incase other frontier needs it
         local index = #explorer_dfs.backtrack_secondary + 1
+        local cur_node = explorer_dfs.cur_pos
+        local backtrack_tertiary = {}
+        local skip_index = index
         -- add path back to when it first removed
         while index > 1 do
             index = index - 1
-            explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = explorer_dfs.backtrack_secondary[index]
+            local backtrack_node = explorer_dfs.backtrack_secondary[index]
+            local need_backtrack_node = false
+            for _, frontier_node in pairs(explorer_dfs.frontier_node) do
+                cur_dist = utils.distance(cur_node, frontier_node)
+                local backtrack_dist = utils.distance(backtrack_node, frontier_node)
+                if backtrack_dist < cur_dist and
+                    backtrack_dist <= explorer_dfs.frontier_max_dist and
+                    cur_dist > explorer_dfs.frontier_max_dist
+                then
+                    need_backtrack_node = true
+                    break
+                end
+            end
+            if need_backtrack_node then
+                if #backtrack_tertiary ~= 0 then
+                    for _, t_backtrack_node in ipairs(backtrack_tertiary) do
+                        explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = t_backtrack_node
+                    end
+                    backtrack_tertiary = {}
+                end
+                explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = backtrack_node
+            else
+                backtrack_tertiary[#backtrack_tertiary+1] = backtrack_node
+                skip_index = index
+            end
+            cur_node = backtrack_node
         end
-        -- add path from when it first removed until now
-        for _, backtrack in ipairs(explorer_dfs.backtrack_secondary) do
-            explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = backtrack
+        -- add path from when it first removed (or first skipped) until now
+        for index, backtrack in ipairs(explorer_dfs.backtrack_secondary) do
+            if skip_index > index then
+                explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = backtrack
+            end
         end
         explorer_dfs.backtrack_secondary = {}
         explorer_dfs.backtracking = false
