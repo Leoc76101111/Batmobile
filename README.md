@@ -27,7 +27,7 @@ TBD (Arkham Asylum is integrated, so check there in the mean time)
 ## Changelog
 ### V1.0.9
 Adjusted frontier_max_dist to 27 (sqrt(frontier_radius^2*2) + backtrack dist)
-Added new priority option for selecting target
+Added new priority option for exploration
     - previously only closest distance
     - [experimental] added priortizing furthest distance from 1st backtrack node (starting point)
 
