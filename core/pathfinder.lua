@@ -2,7 +2,7 @@ local utils = require 'core.utils'
 local settings = require 'core.settings'
 local tracker = require 'core.tracker'
 
-local pathfinder_astar = {}
+local pathfinder = {}
 
 local get_lowest_f_score = function (open_set, f_score)
     local lowest = nil
@@ -121,10 +121,7 @@ local get_neighbors = function (node, goal, evaluated, ignore_walls)
     end
     return neighbors, evaluated
 end
-pathfinder_astar.get_counter = function ()
-    return pathfinder_astar.counter
-end
-pathfinder_astar.find_path = function (start, goal, is_custom_target)
+pathfinder.find_path = function (start, goal, is_custom_target)
     utils.log(2, 'start find path')
     local start_node = utils.normalize_node(start)
     local goal_node = utils.normalize_node(goal)
@@ -174,4 +171,4 @@ pathfinder_astar.find_path = function (start, goal, is_custom_target)
     return {}
 end
 
-return pathfinder_astar
+return pathfinder

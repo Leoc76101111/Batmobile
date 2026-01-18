@@ -1,4 +1,4 @@
-local explorer_dfs = require 'core.explorer_dfs'
+local explorer = require 'core.explorer'
 local navigator = require 'core.navigator'
 local settings = require 'core.settings'
 local utils = require 'core.utils'
@@ -17,10 +17,10 @@ drawing.draw_nodes = function (local_player)
     local start_draw = os.clock()
     local max_dist = 50
 
-    local visited_count = explorer_dfs.visited_count
-    local frontier_count = explorer_dfs.frontier_count
-    local backtrack = explorer_dfs.backtrack
-    local retry_count = explorer_dfs.retry_count
+    local visited_count = explorer.visited_count
+    local frontier_count = explorer.frontier_count
+    local backtrack = explorer.backtrack
+    local retry_count = explorer.retry_count
 
     local player_pos = local_player:get_position()
     local valid_z = player_pos:z()
@@ -28,12 +28,12 @@ drawing.draw_nodes = function (local_player)
     local path = navigator.path
     local counter = 0
 
-    -- for node_str,_ in pairs(explorer_dfs.frontier) do
+    -- for node_str,_ in pairs(explorer.frontier) do
     --     local node = utils.string_to_vec(node_str)
     --     local valid = vec3:new(node:x(), node:y(), valid_z)
     --     graphics.circle_3d(valid, 0.05, color_blue(255))
     -- end
-    -- local perimeter = explorer_dfs.get_perimeter(cur_node)
+    -- local perimeter = explorer.get_perimeter(cur_node)
     -- for _, node in pairs(perimeter) do
     --     local valid = vec3:new(node:x(), node:y(), valid_z)
     --     -- valid = utility.set_height_of_valid_position(node)

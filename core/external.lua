@@ -1,7 +1,7 @@
 local plugin_label = 'batmobile'
 -- kept plugin label instead of waiting for update_tracker to set it
 local navigator = require 'core.navigator'
-local explorer_dfs = require 'core.explorer_dfs'
+local explorer = require 'core.explorer'
 local tracker = require 'core.tracker'
 local utils = require 'core.utils'
 
@@ -88,7 +88,7 @@ external.get_backtrack = function(caller)
     end
     tracker.external_caller = caller
     utils.log(2, 'get_backtrack called by ' .. tostring(caller))
-    return explorer_dfs.backtrack
+    return explorer.backtrack
 end
 external.set_priority = function(caller, priority)
     if caller == nil then
@@ -97,7 +97,7 @@ external.set_priority = function(caller, priority)
     end
     tracker.external_caller = caller
     utils.log(2, 'set_priority called by ' .. tostring(caller) .. ' to priortize ' .. tostring(priority))
-    explorer_dfs.set_priority(priority)
+    explorer.set_priority(priority)
 end
 
 return external

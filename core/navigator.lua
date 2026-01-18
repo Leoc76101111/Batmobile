@@ -1,5 +1,5 @@
-local explorer_dfs = require 'core.explorer_dfs'
-local path_finder = require 'core.pathfinder_astar'
+local explorer = require 'core.explorer'
+local path_finder = require 'core.pathfinder'
 local utils = require 'core.utils'
 local settings = require 'core.settings'
 local tracker = require 'core.tracker'
@@ -173,7 +173,7 @@ select_target = function (prev_target)
         navigator.last_trav = nil
         navigator.blacklisted_trav = {}
     end
-    local target = explorer_dfs.select_node(local_player, prev_target)
+    local target = explorer.select_node(local_player, prev_target)
     if target ~= nil then
         utils.log(2, 'selecting target ' .. utils.vec_to_string(target))
     else
@@ -284,11 +284,11 @@ navigator.update = function ()
     local local_player = get_local_player()
     if not local_player then return end
     if has_traversal_buff(local_player) then return end
-    explorer_dfs.update(local_player)
+    explorer.update(local_player)
 end
 navigator.reset = function ()
     utils.log(1, 'reseting')
-    explorer_dfs.reset()
+    explorer.reset()
     navigator.target = nil
     navigator.is_custom_target = false
     navigator.done = false
@@ -317,7 +317,7 @@ navigator.set_target = function (target, disable_spell)
         navigator.path = {}
         navigator.disable_spell = disable_spell
     end
-    explorer_dfs.backtracking = false
+    explorer.backtracking = false
 end
 navigator.clear_target = function ()
     navigator.target = nil
@@ -441,7 +441,7 @@ navigator.move = function ()
         not has_traversal_buff(local_player)
     then
         if navigator.done_delay ~= nil and navigator.done_delay < get_time_since_inject() then
-            if explorer_dfs.frontier_count > 0 and #explorer_dfs.backtrack == 0 then
+            if explorer.frontier_count > 0 and #explorer.backtrack == 0 then
                 utils.log(1, 'not done but no more backtrack, reseting')
                 navigator.reset()
                 return
