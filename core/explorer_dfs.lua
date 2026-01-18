@@ -14,15 +14,17 @@ local explorer_dfs = {
     frontier_index = 0,
     frontier_count = 0,
     frontier_radius = 13,
-    frontier_max_dist = 19,
+    frontier_max_dist = 27,
     retry_count = 0,
     backtrack = {},
+    backtrack_secondary = {},
     last_dir = nil,
     backtracking = false,
     backtrack_node = nil,
     backtrack_min_dist = 8,
     backtrack_failed_time = -1,
-    backtrack_timeout = 5
+    backtrack_timeout = 5,
+    priority = 'direction',
 }
 local add_frontier = function (node_str, node)
     explorer_dfs.frontier[node_str] = explorer_dfs.frontier_index
@@ -95,6 +97,174 @@ local get_perimeter = function (node)
     end
     return perimeter
 end
+local select_node_distance = function (local_player)
+    -- get all perimeter (unvisited) of current position
+    local perimeter = get_perimeter(explorer_dfs.cur_pos)
+    -- furthest from first backtrack
+    local furthest_node = nil
+    local furthest_node_str = nil
+    local furthers_dist = nil
+    local check_pos = explorer_dfs.backtrack[1] or explorer_dfs.cur_pos
+    local cur_dist = utils.distance(explorer_dfs.cur_pos, check_pos)
+
+    -- check perimeter and frontier for furthest if not backtracking
+    if not explorer_dfs.backtracking then
+        for _, p_node in ipairs(perimeter) do
+            local dist = utils.distance(p_node, check_pos)
+            if dist >= cur_dist and
+                (furthest_node == nil or dist > furthers_dist)
+            then
+                furthest_node = p_node
+                furthers_dist = dist
+            end
+        end
+    end
+    if furthest_node == nil then
+        local index = explorer_dfs.frontier_index + 1
+        while index >= 0 do
+            index = index - 1
+            local most_recent_str = explorer_dfs.frontier_order[index]
+            if most_recent_str ~= nil then
+                -- skip if node is visited
+                if explorer_dfs.visited[most_recent_str] ~= nil then
+                    remove_frontier(most_recent_str)
+                else
+                    local frontier_node = explorer_dfs.frontier_node[most_recent_str]
+                    local dist = utils.distance(frontier_node, check_pos)
+                    if furthest_node == nil or dist > furthers_dist then
+                        furthest_node = frontier_node
+                        furthers_dist = dist
+                        furthest_node_str = most_recent_str
+                    end
+                end
+            end
+        end
+    end
+    if furthest_node ~= nil and
+        utils.distance(furthest_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist
+    then
+        if furthest_node_str ~= nil then
+            remove_frontier(furthest_node_str)
+        end
+        -- restore secondary backtrack, incase other frontier needs it
+        local index = #explorer_dfs.backtrack_secondary + 1
+        -- add path back to when it first removed
+        while index > 1 do
+            index = index - 1
+            explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = explorer_dfs.backtrack_secondary[index]
+        end
+        -- add path from when it first removed until now
+        for _, backtrack in ipairs(explorer_dfs.backtrack_secondary) do
+            explorer_dfs.backtrack[#explorer_dfs.backtrack+1] = backtrack
+        end
+        explorer_dfs.backtrack_secondary = {}
+        explorer_dfs.backtracking = false
+        return furthest_node
+    end
+    -- only backtrack if there are still frontier nodes (to get closer to frontier node)
+    if explorer_dfs.frontier_count > 0 then
+        while #explorer_dfs.backtrack > 0 do
+            -- simulating pop()
+            local last_index = #explorer_dfs.backtrack
+            local last_pos = explorer_dfs.backtrack[last_index]
+            explorer_dfs.backtrack[last_index] = nil
+            if utils.distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
+                explorer_dfs.backtracking = true
+                -- store backrack to secondary so it can be restored
+                explorer_dfs.backtrack_secondary[#explorer_dfs.backtrack_secondary+1] = last_pos
+                return last_pos
+            end
+        end
+    end
+    -- no perimeter, no frontier all explored or unreachable
+    explorer_dfs.backtracking = false
+    return nil
+end
+local select_node_direction = function (local_player, failed)
+    -- get all perimeter (unvisited) of current position
+    local perimeter = get_perimeter(explorer_dfs.cur_pos)
+    if #perimeter > 0 then
+        if explorer_dfs.last_dir ~= nil then
+            local last_dx = explorer_dfs.last_dir[1]
+            local last_dy = explorer_dfs.last_dir[2]
+            local check_pos = explorer_dfs.cur_pos
+            if failed ~= nil then
+                check_pos = failed
+            end
+
+            -- closest direction
+            local closest_dir_node = nil
+            local closest_dir_diff = nil
+            local closest_dir_dx = nil
+            local closest_dir_dy = nil
+
+            for _, p_node in ipairs(perimeter) do
+                local dx = p_node:x() - check_pos:x()
+                local dy = p_node:y() - check_pos:y()
+                local diff = math.abs(dx - last_dx) + math.abs(dy - last_dy)
+                if closest_dir_diff == nil or closest_dir_diff > diff then
+                    closest_dir_diff = diff
+                    closest_dir_node = p_node
+                    closest_dir_dx = dx
+                    closest_dir_dy = dy
+                end
+            end
+
+            explorer_dfs.last_dir = {closest_dir_dx, closest_dir_dy}
+            explorer_dfs.backtracking = false
+            return closest_dir_node
+        end
+
+        -- if no last direction, just pick first one
+        local dx = perimeter[1]:x() - explorer_dfs.cur_pos:x()
+        local dy = perimeter[1]:y() - explorer_dfs.cur_pos:y()
+        explorer_dfs.last_dir = {dx, dy}
+        explorer_dfs.backtracking = false
+        return perimeter[1]
+    end
+
+    -- if no unvisited perimeter, try to find an unexplored node in frontier within distance
+    local index = explorer_dfs.frontier_index + 1
+    while index >= 0 do
+        index = index - 1
+        local most_recent_str = explorer_dfs.frontier_order[index]
+        if most_recent_str ~= nil then
+            -- skip if node is visited
+            if explorer_dfs.visited[most_recent_str] ~= nil then
+                remove_frontier(most_recent_str)
+            else
+                local frontier_node = explorer_dfs.frontier_node[most_recent_str]
+                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist then
+                    remove_frontier(most_recent_str)
+                    explorer_dfs.backtracking = false
+                    local dx = frontier_node:x() - explorer_dfs.cur_pos:x()
+                    local dy = frontier_node:y() - explorer_dfs.cur_pos:y()
+                    explorer_dfs.last_dir = {dx, dy}
+                    return frontier_node
+                end
+            end
+        end
+    end
+    -- only backtrack if there are still frontier nodes (to get closer to frontier node)
+    if explorer_dfs.frontier_count > 0 then
+        while #explorer_dfs.backtrack > 0 do
+            -- simulating pop()
+            local last_index = #explorer_dfs.backtrack
+            local last_pos = explorer_dfs.backtrack[last_index]
+            explorer_dfs.backtrack[last_index] = nil
+            if utils.distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
+                explorer_dfs.backtracking = true
+                local dx = last_pos:x() - explorer_dfs.cur_pos:x()
+                local dy = last_pos:y() - explorer_dfs.cur_pos:y()
+                explorer_dfs.last_dir = {dx, dy}
+                return last_pos
+            end
+        end
+    end
+    -- no perimeter, no frontier all explored or unreachable
+    explorer_dfs.backtracking = false
+    return nil
+end
 explorer_dfs.get_perimeter = get_perimeter
 explorer_dfs.reset = function ()
     explorer_dfs.visited = {}
@@ -109,10 +279,20 @@ explorer_dfs.reset = function ()
     explorer_dfs.cur_pos = nil
     explorer_dfs.prev_pos = nil
     explorer_dfs.backtrack = {}
+    explorer_dfs.backtrack_secondary = {}
     explorer_dfs.backtrack_node = nil
     explorer_dfs.backtracking = false
     explorer_dfs.backtrack_failed_time = -1
     explorer_dfs.last_dir = nil
+end
+explorer_dfs.set_priority = function (priority)
+    local allowed = {
+        ['direction'] = true,
+        ['distance'] = true,
+    }
+    if allowed[priority] then
+        explorer_dfs.priority = priority
+    end
 end
 explorer_dfs.set_current_pos = function (local_player)
     explorer_dfs.prev_pos = explorer_dfs.cur_pos
@@ -204,91 +384,13 @@ explorer_dfs.select_node = function (local_player, failed)
         add_visited(failed_str)
         add_retry(failed_str)
     end
-    -- get all perimeter (unvisited) of current position
-    local perimeter = get_perimeter(explorer_dfs.cur_pos)
 
-    -- if there are unvisited perimeter, try to maintain direction
-    if #perimeter > 0 then
-        if explorer_dfs.last_dir ~= nil then
-            local last_dx = explorer_dfs.last_dir[1]
-            local last_dy = explorer_dfs.last_dir[2]
-            local check_pos = explorer_dfs.cur_pos
-            if failed ~= nil then
-                check_pos = failed
-            end
-
-            -- closest direction
-            local closest_dir_node = nil
-            local closest_dir_diff = nil
-            local closest_dir_dx = nil
-            local closest_dir_dy = nil
-
-            for _, p_node in ipairs(perimeter) do
-                local dx = p_node:x() - check_pos:x()
-                local dy = p_node:y() - check_pos:y()
-                local diff = math.abs(dx - last_dx) + math.abs(dy - last_dy)
-                if closest_dir_diff == nil or closest_dir_diff > diff then
-                    closest_dir_diff = diff
-                    closest_dir_node = p_node
-                    closest_dir_dx = dx
-                    closest_dir_dy = dy
-                end
-            end
-
-            explorer_dfs.last_dir = {closest_dir_dx, closest_dir_dy}
-            explorer_dfs.backtracking = false
-            return closest_dir_node
-        end
-
-        -- if no last direction, just pick first one
-        local dx = perimeter[1]:x() - explorer_dfs.cur_pos:x()
-        local dy = perimeter[1]:y() - explorer_dfs.cur_pos:y()
-        explorer_dfs.last_dir = {dx, dy}
-        explorer_dfs.backtracking = false
-        return perimeter[1]
+    if explorer_dfs.priority == 'distance' then
+        return select_node_distance(local_player)
     end
 
-    -- if no unvisited perimeter, try to find an unexplored node in frontier within distance
-    local index = explorer_dfs.frontier_index + 1
-    while index >= 0 do
-        index = index - 1
-        local most_recent_str = explorer_dfs.frontier_order[index]
-        if most_recent_str ~= nil then
-            -- skip if node is visited
-            if explorer_dfs.visited[most_recent_str] ~= nil then
-                remove_frontier(most_recent_str)
-            else
-                local frontier_node = explorer_dfs.frontier_node[most_recent_str]
-                if utils.distance(frontier_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist then
-                    remove_frontier(most_recent_str)
-                    explorer_dfs.backtracking = false
-                    local dx = frontier_node:x() - explorer_dfs.cur_pos:x()
-                    local dy = frontier_node:y() - explorer_dfs.cur_pos:y()
-                    explorer_dfs.last_dir = {dx, dy}
-                    return frontier_node
-                end
-            end
-        end
-    end
-    -- only backtrack if there are still frontier nodes (to get closer to frontier node)
-    if utils.get_set_count(explorer_dfs.frontier_order) > 0 then
-        while #explorer_dfs.backtrack > 0 do
-            -- simulating pop()
-            local last_index = #explorer_dfs.backtrack
-            local last_pos = explorer_dfs.backtrack[last_index]
-            explorer_dfs.backtrack[last_index] = nil
-            if utils.distance(last_pos, explorer_dfs.cur_pos) ~= 0 then
-                explorer_dfs.backtracking = true
-                local dx = last_pos:x() - explorer_dfs.cur_pos:x()
-                local dy = last_pos:y() - explorer_dfs.cur_pos:y()
-                explorer_dfs.last_dir = {dx, dy}
-                return last_pos
-            end
-        end
-    end
-    -- no perimeter, no frontier all explored or unreachable
-    explorer_dfs.backtracking = false
-    return nil
+    -- default priority explorer_dfs.priority == 'direction'
+    return select_node_direction(local_player, failed)
 end
 
 return explorer_dfs

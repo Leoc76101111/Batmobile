@@ -90,5 +90,14 @@ external.get_backtrack = function(caller)
     utils.log(2, 'get_backtrack called by ' .. tostring(caller))
     return explorer_dfs.backtrack
 end
+external.set_priority = function(caller, priority)
+    if caller == nil then
+        utils.log(2,'set_priority called with no caller')
+        return
+    end
+    tracker.external_caller = caller
+    utils.log(2, 'set_priority called by ' .. tostring(caller) .. ' to priortize ' .. tostring(priority))
+    explorer_dfs.set_priority(priority)
+end
 
 return external

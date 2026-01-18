@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V1.0.8
+#### V1.0.9
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
@@ -25,6 +25,12 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.9
+Adjusted frontier_max_dist to 27 (sqrt(frontier_radius^2*2) + backtrack dist)
+Added new priority option for selecting target
+    - previously only closest distance
+    - [experimental] added priortizing furthest distance from 1st backtrack node (starting point)
+
 ### V1.0.8
 Fixed bug sometimes it doesnt ignore nodes next to wall properly.
 Fixed bug where if starting point is close to wall, it failed to navigate away.
