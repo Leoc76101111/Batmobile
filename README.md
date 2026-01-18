@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V1.0.7
+#### V1.0.8
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
@@ -25,6 +25,10 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.8
+Fixed bug sometimes it doesnt ignore nodes next to wall properly.
+Fixed bug where if starting point is close to wall, it failed to navigate away.
+
 ### V1.0.7
 Improved pathfinder logic to reduce overall processing power
 Updated pathfinder to only ignore nodes if the target is given by explorer

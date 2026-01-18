@@ -72,15 +72,15 @@ drawing.draw_nodes = function (local_player)
         end
     end
 
-    -- for node_str, result in pairs(tracker.evaluated) do
-    --     local node = utils.string_to_vec(node_str)
-    --     local valid_node = vec3:new(node:x(), node:y(), valid_z)
-    --     if result ~= nil and result[1] then
-    --         graphics.circle_3d(valid_node, 0.05, color_green(255))
-    --     else
-    --         graphics.circle_3d(valid_node, 0.05, color_blue(255))
-    --     end
-    -- end
+    for node_str, result in pairs(tracker.evaluated) do
+        local node = utils.string_to_vec(node_str)
+        local valid_node = vec3:new(node:x(), node:y(), valid_z)
+        if result ~= nil and result[1] then
+            graphics.circle_3d(valid_node, 0.05, color_green(255))
+        else
+            graphics.circle_3d(valid_node, 0.05, color_blue(255))
+        end
+    end
 
     if tracker.debug_pos ~= nil then
         local valid = utility.set_height_of_valid_position(tracker.debug_pos)

@@ -31,12 +31,12 @@ local reconstruct_path = function (closed_set, prev_nodes, cur_node)
     return path
 end
 
-local get_valid_neighbor = function (start, goal, x, y, evaluated, is_custom_target)
+local get_valid_neighbor = function (cur_node, goal, x, y, evaluated, ignore_walls)
     local node, node_str, result, valid
     node_str = tostring(x) .. ',' .. tostring(y)
     result = evaluated[node_str]
     if result == nil then
-        node = vec3:new(x, y, start:z())
+        node = vec3:new(x, y, cur_node:z())
         node = utils.get_valid_node(node, goal:z())
         valid = node ~= nil
     else
@@ -48,7 +48,7 @@ local get_valid_neighbor = function (start, goal, x, y, evaluated, is_custom_tar
         return nil, evaluated
     end
 
-    if is_custom_target then
+    if ignore_walls then
         return node, evaluated
     end
 
@@ -69,12 +69,20 @@ local get_valid_neighbor = function (start, goal, x, y, evaluated, is_custom_tar
         local newx = node:x() + dx
         local newy = node:y() + dy
         local new_node_str = tostring(newx) .. ',' .. tostring(newy)
-        result = evaluated[node_str]
+        result = evaluated[new_node_str]
         if result == nil then
-            local new_node = vec3:new(newx, newy, start:z())
+            local new_node = vec3:new(newx, newy, cur_node:z())
+            if newx == goal:x() and newy == goal:y() then
+                evaluated[new_node_str] = {true, new_node}
+                return node, evaluated
+            end
             new_node = utils.get_valid_node(new_node, goal:z())
             evaluated[new_node_str] = {new_node ~= nil, new_node}
             if new_node == nil then
+                return nil, evaluated
+            end
+        else
+            if not result[1] then
                 return nil, evaluated
             end
         end
@@ -82,7 +90,7 @@ local get_valid_neighbor = function (start, goal, x, y, evaluated, is_custom_tar
 
     return node, evaluated
 end
-local get_neighbors = function (node, goal, evaluated, is_custom_target)
+local get_neighbors = function (node, goal, evaluated, ignore_walls)
     local neighbors = {}
     local dist = settings.step
     local directions = {
@@ -105,7 +113,7 @@ local get_neighbors = function (node, goal, evaluated, is_custom_target)
             break
         end
         local valid = nil
-        valid, evaluated = get_valid_neighbor(node, goal, newx, newy, evaluated, is_custom_target)
+        valid, evaluated = get_valid_neighbor(node, goal, newx, newy, evaluated, ignore_walls)
 
         if valid ~= nil then
             neighbors[#neighbors+1] = valid
@@ -143,8 +151,9 @@ pathfinder_astar.find_path = function (start, goal, is_custom_target)
         open_set[cur_str] = nil
         closed_set[cur_str] = cur_node
 
+        local ignore_walls = is_custom_target or utils.distance(start_node, cur_node) < 1
         local neighbours
-        neighbours, evaluated = get_neighbors(cur_node, goal_node, evaluated, is_custom_target)
+        neighbours, evaluated = get_neighbors(cur_node, goal_node, evaluated, ignore_walls)
 
         for _, neighbor in ipairs(neighbours) do
             local neigh_str = utils.vec_to_string(neighbor)
