@@ -25,6 +25,7 @@ local explorer_dfs = {
     backtrack_failed_time = -1,
     backtrack_timeout = 5,
     priority = 'direction',
+    wrong_dir_count = 0,
 }
 local add_frontier = function (node_str, node)
     explorer_dfs.frontier[node_str] = explorer_dfs.frontier_index
@@ -110,14 +111,17 @@ local select_node_distance = function (local_player)
     -- check perimeter and frontier for furthest if not backtracking
     for _, p_node in ipairs(perimeter) do
         local dist = utils.distance(p_node, check_pos)
-        if dist >= cur_dist and
-            (furthest_node == nil or dist > furthers_dist)
-        then
+        if furthest_node == nil or dist > furthers_dist then
             furthest_node = p_node
             furthers_dist = dist
         end
     end
-    if furthest_node == nil or explorer_dfs.backtracking then
+    if furthers_dist ~= nil and furthers_dist < cur_dist then
+        explorer_dfs.wrong_dir_count = explorer_dfs.wrong_dir_count + 1
+    else
+        explorer_dfs.wrong_dir_count = 0
+    end
+    if furthest_node == nil or explorer_dfs.wrong_dir_count > 3 then
         local index = explorer_dfs.frontier_index + 1
         while index >= 0 do
             index = index - 1
@@ -142,6 +146,7 @@ local select_node_distance = function (local_player)
         utils.distance(furthest_node, explorer_dfs.cur_pos) <= explorer_dfs.frontier_max_dist
     then
         if furthest_node_str ~= nil then
+            explorer_dfs.wrong_dir_count = 0
             remove_frontier(furthest_node_str)
         end
         -- restore secondary backtrack, incase other frontier needs it
@@ -282,6 +287,7 @@ explorer_dfs.reset = function ()
     explorer_dfs.backtracking = false
     explorer_dfs.backtrack_failed_time = -1
     explorer_dfs.last_dir = nil
+    explorer_dfs.wrong_dir_count = 0
 end
 explorer_dfs.set_priority = function (priority)
     local allowed = {
