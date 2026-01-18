@@ -108,18 +108,16 @@ local select_node_distance = function (local_player)
     local cur_dist = utils.distance(explorer_dfs.cur_pos, check_pos)
 
     -- check perimeter and frontier for furthest if not backtracking
-    if not explorer_dfs.backtracking then
-        for _, p_node in ipairs(perimeter) do
-            local dist = utils.distance(p_node, check_pos)
-            if dist >= cur_dist and
-                (furthest_node == nil or dist > furthers_dist)
-            then
-                furthest_node = p_node
-                furthers_dist = dist
-            end
+    for _, p_node in ipairs(perimeter) do
+        local dist = utils.distance(p_node, check_pos)
+        if dist >= cur_dist and
+            (furthest_node == nil or dist > furthers_dist)
+        then
+            furthest_node = p_node
+            furthers_dist = dist
         end
     end
-    if furthest_node == nil then
+    if furthest_node == nil or explorer_dfs.backtracking then
         local index = explorer_dfs.frontier_index + 1
         while index >= 0 do
             index = index - 1
