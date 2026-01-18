@@ -26,7 +26,8 @@ local navigator = {
     move_timeout = 0.05,
     update_time = -1,
     update_timeout = 0.05,
-    disable_spell = nil
+    disable_spell = nil,
+    is_custom_target = false,
 }
 local get_nearby_travs = function (local_player)
     local traversals = {}
@@ -71,7 +72,7 @@ local get_closeby_node = function (trav_node, max_dist)
         return utils.distance(a, norm_trav) < utils.distance(b, norm_trav)
     end)
     for _, node in ipairs(nodes) do
-        local result = path_finder.find_path(cur_node, node)
+        local result = path_finder.find_path(cur_node, node, navigator.is_custom_target)
         if #result > 0 then return node end
     end
     return nil
@@ -263,6 +264,7 @@ local unstuck = function (local_player)
     end
     utils.log(1, 'unstuck by choosing new target')
     navigator.target = select_target(navigator.target)
+    navigator.is_custom_target = false
     navigator.unstuck_nodes = {}
 end
 navigator.is_done = function ()
@@ -288,6 +290,7 @@ navigator.reset = function ()
     utils.log(1, 'reseting')
     explorer_dfs.reset()
     navigator.target = nil
+    navigator.is_custom_target = false
     navigator.done = false
     navigator.done_delay = nil
     navigator.path = {}
@@ -310,6 +313,7 @@ navigator.set_target = function (target, disable_spell)
         navigator.disable_spell ~= disable_spell
     then
         navigator.target = new_target
+        navigator.is_custom_target = true
         navigator.path = {}
         navigator.disable_spell = disable_spell
     end
@@ -317,6 +321,7 @@ navigator.set_target = function (target, disable_spell)
 end
 navigator.clear_target = function ()
     navigator.target = nil
+    navigator.is_custom_target = false
     navigator.path = {}
     navigator.disable_spell = nil
 end
@@ -338,6 +343,7 @@ navigator.move = function ()
             if name:match('Jump') then
                 -- jump doesnt have traversal buff for some reason
                 navigator.target = nil
+                navigator.is_custom_target = false
                 navigator.path = {}
                 navigator.disable_spell = nil
                 navigator.last_trav = nil
@@ -347,6 +353,7 @@ navigator.move = function ()
         if has_traversal_buff(local_player) then
             navigator.trav_delay = get_time_since_inject() + 4
             navigator.target = nil
+            navigator.is_custom_target = false
             navigator.path = {}
             navigator.disable_spell = nil
             navigator.last_trav = nil
@@ -406,6 +413,7 @@ navigator.move = function ()
         navigator.blacklisted_spell_node = {}
         if navigator.paused then return end
         navigator.target = select_target(nil)
+        navigator.is_custom_target = false
         navigator.path = {}
         navigator.disable_spell = nil
     elseif navigator.target ~= nil and
@@ -452,11 +460,12 @@ navigator.move = function ()
     if navigator.target ~= nil and (#navigator.path == 0 or
         utils.distance(navigator.path[1], navigator.last_pos) > navigator.movement_dist)
     then
-        local result = path_finder.find_path(navigator.last_pos, navigator.target)
+        local result = path_finder.find_path(navigator.last_pos, navigator.target, navigator.is_custom_target)
         if #result == 0 then
             tracker.debug_node = navigator.target
             if navigator.paused then return end
             navigator.target = select_target(navigator.target)
+            navigator.is_custom_target = false
             navigator.path = {}
             navigator.disable_spell = nil
             return

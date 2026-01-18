@@ -72,10 +72,10 @@ drawing.draw_nodes = function (local_player)
         end
     end
 
-    -- for node_str, valid in pairs(tracker.evaluated) do
+    -- for node_str, result in pairs(tracker.evaluated) do
     --     local node = utils.string_to_vec(node_str)
     --     local valid_node = vec3:new(node:x(), node:y(), valid_z)
-    --     if valid then
+    --     if result ~= nil and result[1] then
     --         graphics.circle_3d(valid_node, 0.05, color_green(255))
     --     else
     --         graphics.circle_3d(valid_node, 0.05, color_blue(255))
