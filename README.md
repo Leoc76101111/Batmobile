@@ -25,6 +25,9 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.11
+Optimized distance priority to correctly change direction after 2x travelling closer to start
+
 ### V1.0.10
 Optimized handling of backtrack for distance priorty
 

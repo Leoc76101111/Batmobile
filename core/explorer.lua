@@ -167,19 +167,21 @@ local select_node_distance = function ()
     local cur_dist = utils.distance(explorer.cur_pos, check_pos)
 
     -- check perimeter and frontier for furthest if not backtracking
-    for _, p_node in ipairs(perimeter) do
-        local dist = utils.distance(p_node, check_pos)
-        if furthest_node == nil or dist > furthers_dist then
-            furthest_node = p_node
-            furthers_dist = dist
+    if explorer.wrong_dir_count <= 2 then
+        for _, p_node in ipairs(perimeter) do
+            local dist = utils.distance(p_node, check_pos)
+            if furthest_node == nil or dist > furthers_dist then
+                furthest_node = p_node
+                furthers_dist = dist
+            end
+        end
+        if furthers_dist ~= nil and furthers_dist < cur_dist then
+            explorer.wrong_dir_count = explorer.wrong_dir_count + 1
+        else
+            explorer.wrong_dir_count = 0
         end
     end
-    if furthers_dist ~= nil and furthers_dist < cur_dist then
-        explorer.wrong_dir_count = explorer.wrong_dir_count + 1
-    else
-        explorer.wrong_dir_count = 0
-    end
-    if furthest_node == nil or explorer.wrong_dir_count > 2 then
+    if furthest_node == nil then
         local index = explorer.frontier_index
         while index >= 0 do
             local most_recent_str = explorer.frontier_order[index]
