@@ -112,6 +112,9 @@ local get_movement_spell_id = function(local_player)
             return 204662, true
         end
     elseif class == 'paladin' then
+        if settings.use_advance and utility.can_cast_spell(2329865) then
+            return 2329865, true
+        end
         if settings.use_falling_star and utility.can_cast_spell(2106904) then
             return 2106904, true
         end

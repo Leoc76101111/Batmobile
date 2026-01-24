@@ -1,5 +1,5 @@
 local plugin_label = 'batmobile'
-local plugin_version = '1.0.11'
+local plugin_version = '1.0.12'
 console.print("Lua Plugin - Batmobile - Leoric - v" .. plugin_version)
 
 local get_character_class = function (local_player)
@@ -54,6 +54,7 @@ gui.elements = {
     use_hunter = create_checkbox(true, "use_hunter"),
     use_leap = create_checkbox(true, "use_leap"),
     use_charge = create_checkbox(true, "use_charge"),
+    use_advance = create_checkbox(true, "use_advance"),
     use_falling_star = create_checkbox(true, "use_falling_star"),
     use_aoj = create_checkbox(true, "use_aoj"),
     advanced_tree = tree_node:new(1),
@@ -83,6 +84,7 @@ function gui.render()
             gui.elements.use_leap:render('leap', 'use leap for movement')
             gui.elements.use_charge:render('charge', 'use charge for movement')
         elseif class == 'paladin' then
+            gui.elements.use_advance:render('advance', 'use advance for movement')
             gui.elements.use_falling_star:render('falling star', 'use falling star for movement')
             gui.elements.use_aoj:render('Arbiter of Justice', 'use Arbiter of Justice for movement')
         elseif class == 'default' and class == 'druid' and class == 'necromancer' then

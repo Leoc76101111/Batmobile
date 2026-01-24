@@ -1,5 +1,5 @@
 # Batmobile (explorer/navigator)
-#### V1.0.10
+#### V1.0.12
 ## Description
 Batmobile itself does not do anything, but it provides other plugins to utilize it for exploring and path finding.
 For exploration:
@@ -25,6 +25,9 @@ Batmobile also handles any traversals in game if move command is given.
 TBD (Arkham Asylum is integrated, so check there in the mean time)
 
 ## Changelog
+### V1.0.12
+Added paladin advance skill as movement spell
+
 ### V1.0.11
 Optimized distance priority to correctly change direction after 2x travelling closer to start
 
